@@ -1,39 +1,215 @@
 # Development Log
 
+## Purpose
+
+This document records the major milestones completed during the development of TeamFlow AI.
+
+It serves as a chronological engineering log summarizing the objective, outcome, and progression of the project.
+
 ---
 
-## 2026-07-20 — Setup S0-2: Local Development Workspace
+## S0-1 — GitHub Repository
 
-### Objective
-Set up the local development workspace and establish the project's directory structure.
+**Objective**
 
-### Completed
-- Created the local project workspace.
-- Created the initial project folder structure.
-- Understood the purpose of each directory.
-- Verified the workspace organization.
+Create the remote repository and establish version control for the project.
 
-### Challenges
-None.
+**Completed**
 
-### Next Task
-Setup S0-3 — Install and configure Git.
+- Created the GitHub repository.
+- Configured the initial repository.
+- Added the project license and initial README.
 
+**Challenges**
 
-## 2026-07-20 — Setup S0-3: Git Installation & Repository Setup
+- None.
 
-### Objective
-Install Git, configure Git for development, and connect the local development workspace to the remote GitHub repository.
+---
 
-### Completed
-- Verified Git installation.
-- Configured Git user name and email.
-- Cloned the TeamFlow-AI repository from GitHub.
-- Verified the local repository was connected to the remote origin.
-- Understood the basic Git workflow.
+## S0-2 — Local Development Workspace
 
-### Challenges
-None.
+**Objective**
 
-### Next Task
-Setup S0-4 — Install Java 21.
+Set up the local development workspace.
+
+**Completed**
+
+- Created the local project directory.
+- Organized the initial folder structure.
+- Verified the development workspace.
+
+**Challenges**
+
+- None.
+
+---
+
+## S0-3 — Install & Configure Git
+
+**Objective**
+
+Prepare Git for local development.
+
+**Completed**
+
+- Installed Git.
+- Configured Git user information.
+- Connected the local repository to GitHub.
+- Verified Git operations.
+
+**Challenges**
+
+- None.
+
+---
+
+## S0-4 — Install Java 21
+
+**Objective**
+
+Prepare the Java development environment.
+
+**Completed**
+
+- Installed Java 21.
+- Configured JAVA_HOME.
+- Verified the Java installation.
+
+**Challenges**
+
+- None.
+
+---
+
+## S0-5 — Install & Configure IntelliJ IDEA
+
+**Objective**
+
+Set up the primary Java IDE.
+
+**Completed**
+
+- Installed IntelliJ IDEA Community Edition.
+- Configured the IDE.
+- Verified Gradle and Java integration.
+
+**Challenges**
+
+- None.
+
+---
+
+## S0-6 — Initialize Spring Boot Backend
+
+**Objective**
+
+Create the backend application.
+
+**Completed**
+
+- Generated the Spring Boot project.
+- Configured Gradle Wrapper.
+- Verified successful project startup.
+
+**Challenges**
+
+- None.
+
+---
+
+## S0-7 — Install & Configure Docker Desktop
+
+**Objective**
+
+Prepare the containerization environment.
+
+**Completed**
+
+- Installed Docker Desktop.
+- Verified Docker Engine.
+- Confirmed container support.
+
+**Challenges**
+
+- None.
+
+---
+
+## S0-8 — Install & Configure PostgreSQL
+
+**Objective**
+
+Prepare the project database.
+
+**Completed**
+
+- Installed PostgreSQL.
+- Created the development database.
+- Verified database connectivity.
+
+**Challenges**
+
+- None.
+
+---
+
+## S0-9 — Install & Configure Postman
+
+**Objective**
+
+Prepare the API testing environment.
+
+**Completed**
+
+- Installed Postman.
+- Created the initial workspace.
+- Verified API request execution.
+
+**Challenges**
+
+- None.
+
+---
+
+## S0-10 — Install & Configure Draw.io
+
+**Objective**
+
+Prepare the diagramming environment.
+
+**Completed**
+
+- Installed Draw.io Desktop (diagrams.net).
+- Configured recommended diagram libraries.
+- Verified diagram creation and saving.
+
+**Challenges**
+
+- None.
+
+---
+
+## S0-11 — Final Setup Audit & Documentation
+
+**Objective**
+
+Verify the complete development environment and establish production-quality project documentation.
+
+**Completed**
+
+- Audited the repository structure.
+- Reviewed the documentation layout.
+- Updated the project README.
+- Standardized engineering documentation.
+
+**Challenges**
+
+- None.
+
+---
+
+## Current Status
+
+The project setup phase is complete.
+
+The repository is now ready for feature development.

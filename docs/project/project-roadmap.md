@@ -1,18 +1,18 @@
-# Sprint Status
+# Project Roadmap
 
-## Current Phase
+## Overview
 
-Project Setup
+This roadmap outlines the planned development phases for TeamFlow AI.
 
----
-
-## Current Module
-
-S0-11 — Final Setup Audit & Documentation
+The roadmap is updated as major milestones are completed.
 
 ---
 
-## Completed Modules
+## Phase S0 — Project Setup
+
+**Status:** ✅ Completed
+
+Completed modules:
 
 - [x] S0-1 — GitHub Repository
 - [x] S0-2 — Local Development Workspace
@@ -28,12 +28,14 @@ S0-11 — Final Setup Audit & Documentation
 
 ---
 
-## Next Phase
+## Phase S1 — Project Foundation
 
-Feature Development
+**Status:** ⏳ Planned
+
+This phase will establish the core backend foundation of TeamFlow AI.
 
 ---
 
-## Next Module
+## Future Phases
 
-S1 — Project Foundation
+Additional milestones will be documented as the project evolves.
