@@ -61,8 +61,13 @@ public class TeamRepository {
         }
     }
 
+    public List<Team> findAll() {
+        String sql = "SELECT id, name, created_at FROM teams ORDER BY created_at DESC";
+        return jdbcTemplate.query(sql, teamRowMapper);
+    }
+
     public boolean addMember(UUID teamId, UUID userId) {
-        String sql = "INSERT INTO team_members (team_id, user_id) VALUES (?, ?) ON CONFLICT DO NOTHING";
+        String sql = "INSERT INTO team_members (team_id, user_id) VALUES (?, ?)";
         return jdbcTemplate.update(sql, teamId, userId) > 0;
     }
 
