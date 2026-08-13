@@ -63,8 +63,13 @@ public class ProjectRepository {
         }
     }
 
+    public List<Project> findAll() {
+        String sql = "SELECT id, name, description, created_at FROM projects ORDER BY created_at DESC";
+        return jdbcTemplate.query(sql, projectRowMapper);
+    }
+
     public boolean addMember(UUID projectId, UUID userId) {
-        String sql = "INSERT INTO project_members (project_id, user_id) VALUES (?, ?) ON CONFLICT DO NOTHING";
+        String sql = "INSERT INTO project_members (project_id, user_id) VALUES (?, ?)";
         return jdbcTemplate.update(sql, projectId, userId) > 0;
     }
 
