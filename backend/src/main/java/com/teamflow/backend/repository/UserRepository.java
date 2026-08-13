@@ -55,6 +55,20 @@ public class UserRepository {
         }
     }
 
+    public UserAccount saveAccount(String name, String email, String passwordHash, String role) {
+        String sql = "INSERT INTO users (name, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?) RETURNING id, created_at";
+        Timestamp createdAtTimestamp = new Timestamp(System.currentTimeMillis());
+
+        return jdbcTemplate.queryForObject(sql, (rs, rowNum) -> new UserAccount(
+                rs.getObject("id", UUID.class),
+                name,
+                email,
+                passwordHash,
+                role,
+                rs.getTimestamp("created_at").toInstant()
+        ), name, email, passwordHash, role, createdAtTimestamp);
+    }
+
     public Optional<User> findById(UUID id) {
         String sql = "SELECT id, name, email, created_at FROM users WHERE id = ?";
         try {
