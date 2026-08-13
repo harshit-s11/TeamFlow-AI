@@ -1,13 +1,12 @@
 package com.teamflow.backend.api.controller;
 
-import com.teamflow.backend.api.dto.ProjectCreateRequest;
-import com.teamflow.backend.api.dto.ProjectResponse;
-import com.teamflow.backend.api.dto.ProjectUpdateRequest;
-import com.teamflow.backend.api.dto.UserResponse;
+import com.teamflow.backend.api.dto.*;
 import com.teamflow.backend.api.exception.GlobalExceptionHandler;
 import com.teamflow.backend.application.service.ProjectService;
+import com.teamflow.backend.application.service.SprintService;
 import com.teamflow.backend.common.exception.DuplicateResourceException;
 import com.teamflow.backend.common.exception.ResourceNotFoundException;
+import com.teamflow.backend.domain.model.SprintStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,11 +34,14 @@ class ProjectControllerTest {
     @Mock
     private ProjectService projectService;
 
+    @Mock
+    private SprintService sprintService;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        ProjectController projectController = new ProjectController(projectService);
+        ProjectController projectController = new ProjectController(projectService, sprintService);
         mockMvc = MockMvcBuilders.standaloneSetup(projectController)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
@@ -158,5 +161,19 @@ class ProjectControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Leo"))
                 .andExpect(jsonPath("$[0].email").value("leo@teamflow.com"));
+    }
+
+    @Test
+    void getSprintsByProjectId_whenProjectExists_returnsOk200() throws Exception {
+        UUID projectId = UUID.randomUUID();
+        SprintResponse sprint = new SprintResponse(
+                UUID.randomUUID(), projectId, "Sprint 1", LocalDate.now(), LocalDate.now().plusDays(14), SprintStatus.PLANNED, Instant.now()
+        );
+        given(sprintService.getSprintsByProjectId(projectId)).willReturn(List.of(sprint));
+
+        mockMvc.perform(get("/api/v1/projects/{projectId}/sprints", projectId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Sprint 1"))
+                .andExpect(jsonPath("$[0].status").value("PLANNED"));
     }
 }

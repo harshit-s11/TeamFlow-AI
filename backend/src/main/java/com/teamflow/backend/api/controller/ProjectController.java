@@ -3,8 +3,10 @@ package com.teamflow.backend.api.controller;
 import com.teamflow.backend.api.dto.ProjectCreateRequest;
 import com.teamflow.backend.api.dto.ProjectResponse;
 import com.teamflow.backend.api.dto.ProjectUpdateRequest;
+import com.teamflow.backend.api.dto.SprintResponse;
 import com.teamflow.backend.api.dto.UserResponse;
 import com.teamflow.backend.application.service.ProjectService;
+import com.teamflow.backend.application.service.SprintService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,9 +20,11 @@ import java.util.UUID;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final SprintService sprintService;
 
-    public ProjectController(ProjectService projectService) {
+    public ProjectController(ProjectService projectService, SprintService sprintService) {
         this.projectService = projectService;
+        this.sprintService = sprintService;
     }
 
     @GetMapping
@@ -69,5 +73,10 @@ public class ProjectController {
     @GetMapping("/{projectId}/members")
     public ResponseEntity<List<UserResponse>> getProjectMembers(@PathVariable UUID projectId) {
         return ResponseEntity.ok(projectService.getProjectMembers(projectId));
+    }
+
+    @GetMapping("/{projectId}/sprints")
+    public ResponseEntity<List<SprintResponse>> getSprintsByProjectId(@PathVariable UUID projectId) {
+        return ResponseEntity.ok(sprintService.getSprintsByProjectId(projectId));
     }
 }

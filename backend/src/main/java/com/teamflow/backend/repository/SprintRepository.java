@@ -63,6 +63,11 @@ public class SprintRepository {
         }
     }
 
+    public List<Sprint> findAll() {
+        String sql = "SELECT id, project_id, name, start_date, end_date, status, created_at FROM sprints ORDER BY created_at DESC";
+        return jdbcTemplate.query(sql, sprintRowMapper);
+    }
+
     public List<Sprint> findByProjectId(UUID projectId) {
         String sql = "SELECT id, project_id, name, start_date, end_date, status, created_at FROM sprints WHERE project_id = ? ORDER BY start_date ASC";
         return jdbcTemplate.query(sql, sprintRowMapper, projectId);
