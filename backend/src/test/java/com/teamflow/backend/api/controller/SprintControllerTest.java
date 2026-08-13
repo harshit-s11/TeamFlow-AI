@@ -1,12 +1,13 @@
 package com.teamflow.backend.api.controller;
 
-import com.teamflow.backend.api.dto.SprintCreateRequest;
-import com.teamflow.backend.api.dto.SprintResponse;
-import com.teamflow.backend.api.dto.SprintUpdateRequest;
+import com.teamflow.backend.api.dto.*;
 import com.teamflow.backend.api.exception.GlobalExceptionHandler;
 import com.teamflow.backend.application.service.SprintService;
+import com.teamflow.backend.application.service.TaskService;
 import com.teamflow.backend.common.exception.ResourceNotFoundException;
 import com.teamflow.backend.domain.model.SprintStatus;
+import com.teamflow.backend.domain.model.TaskPriority;
+import com.teamflow.backend.domain.model.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,6 +19,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -32,11 +34,14 @@ class SprintControllerTest {
     @Mock
     private SprintService sprintService;
 
+    @Mock
+    private TaskService taskService;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        SprintController sprintController = new SprintController(sprintService);
+        SprintController sprintController = new SprintController(sprintService, taskService);
         mockMvc = MockMvcBuilders.standaloneSetup(sprintController)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
@@ -137,5 +142,19 @@ class SprintControllerTest {
 
         mockMvc.perform(delete("/api/v1/sprints/{id}", sprintId))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void getTasksBySprintId_whenSprintExists_returnsOk200() throws Exception {
+        UUID sprintId = UUID.randomUUID();
+        TaskResponse task = new TaskResponse(
+                UUID.randomUUID(), UUID.randomUUID(), sprintId, null, "Task 1", "Desc", TaskStatus.TODO, TaskPriority.MEDIUM, Instant.now()
+        );
+        given(taskService.getTasksBySprintId(sprintId)).willReturn(List.of(task));
+
+        mockMvc.perform(get("/api/v1/sprints/{sprintId}/tasks", sprintId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].title").value("Task 1"))
+                .andExpect(jsonPath("$[0].status").value("TODO"));
     }
 }

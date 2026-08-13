@@ -1,12 +1,9 @@
 package com.teamflow.backend.api.controller;
 
-import com.teamflow.backend.api.dto.ProjectCreateRequest;
-import com.teamflow.backend.api.dto.ProjectResponse;
-import com.teamflow.backend.api.dto.ProjectUpdateRequest;
-import com.teamflow.backend.api.dto.SprintResponse;
-import com.teamflow.backend.api.dto.UserResponse;
+import com.teamflow.backend.api.dto.*;
 import com.teamflow.backend.application.service.ProjectService;
 import com.teamflow.backend.application.service.SprintService;
+import com.teamflow.backend.application.service.TaskService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,10 +18,12 @@ public class ProjectController {
 
     private final ProjectService projectService;
     private final SprintService sprintService;
+    private final TaskService taskService;
 
-    public ProjectController(ProjectService projectService, SprintService sprintService) {
+    public ProjectController(ProjectService projectService, SprintService sprintService, TaskService taskService) {
         this.projectService = projectService;
         this.sprintService = sprintService;
+        this.taskService = taskService;
     }
 
     @GetMapping
@@ -78,5 +77,10 @@ public class ProjectController {
     @GetMapping("/{projectId}/sprints")
     public ResponseEntity<List<SprintResponse>> getSprintsByProjectId(@PathVariable UUID projectId) {
         return ResponseEntity.ok(sprintService.getSprintsByProjectId(projectId));
+    }
+
+    @GetMapping("/{projectId}/tasks")
+    public ResponseEntity<List<TaskResponse>> getTasksByProjectId(@PathVariable UUID projectId) {
+        return ResponseEntity.ok(taskService.getTasksByProjectId(projectId));
     }
 }

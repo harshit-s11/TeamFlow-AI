@@ -3,7 +3,9 @@ package com.teamflow.backend.api.controller;
 import com.teamflow.backend.api.dto.SprintCreateRequest;
 import com.teamflow.backend.api.dto.SprintResponse;
 import com.teamflow.backend.api.dto.SprintUpdateRequest;
+import com.teamflow.backend.api.dto.TaskResponse;
 import com.teamflow.backend.application.service.SprintService;
+import com.teamflow.backend.application.service.TaskService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,9 +19,11 @@ import java.util.UUID;
 public class SprintController {
 
     private final SprintService sprintService;
+    private final TaskService taskService;
 
-    public SprintController(SprintService sprintService) {
+    public SprintController(SprintService sprintService, TaskService taskService) {
         this.sprintService = sprintService;
+        this.taskService = taskService;
     }
 
     @GetMapping
@@ -51,5 +55,10 @@ public class SprintController {
     public ResponseEntity<Void> deleteSprint(@PathVariable UUID id) {
         sprintService.deleteSprint(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{sprintId}/tasks")
+    public ResponseEntity<List<TaskResponse>> getTasksBySprintId(@PathVariable UUID sprintId) {
+        return ResponseEntity.ok(taskService.getTasksBySprintId(sprintId));
     }
 }

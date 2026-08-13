@@ -67,6 +67,11 @@ public class TaskRepository {
         }
     }
 
+    public List<Task> findAll() {
+        String sql = "SELECT id, project_id, sprint_id, assigned_user_id, title, description, status, priority, created_at FROM tasks ORDER BY created_at DESC";
+        return jdbcTemplate.query(sql, taskRowMapper);
+    }
+
     public List<Task> findByProjectId(UUID projectId) {
         String sql = "SELECT id, project_id, sprint_id, assigned_user_id, title, description, status, priority, created_at FROM tasks WHERE project_id = ? ORDER BY created_at DESC";
         return jdbcTemplate.query(sql, taskRowMapper, projectId);

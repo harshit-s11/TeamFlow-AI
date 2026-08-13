@@ -4,9 +4,12 @@ import com.teamflow.backend.api.dto.*;
 import com.teamflow.backend.api.exception.GlobalExceptionHandler;
 import com.teamflow.backend.application.service.ProjectService;
 import com.teamflow.backend.application.service.SprintService;
+import com.teamflow.backend.application.service.TaskService;
 import com.teamflow.backend.common.exception.DuplicateResourceException;
 import com.teamflow.backend.common.exception.ResourceNotFoundException;
 import com.teamflow.backend.domain.model.SprintStatus;
+import com.teamflow.backend.domain.model.TaskPriority;
+import com.teamflow.backend.domain.model.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,11 +40,14 @@ class ProjectControllerTest {
     @Mock
     private SprintService sprintService;
 
+    @Mock
+    private TaskService taskService;
+
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        ProjectController projectController = new ProjectController(projectService, sprintService);
+        ProjectController projectController = new ProjectController(projectService, sprintService, taskService);
         mockMvc = MockMvcBuilders.standaloneSetup(projectController)
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
@@ -175,5 +181,19 @@ class ProjectControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Sprint 1"))
                 .andExpect(jsonPath("$[0].status").value("PLANNED"));
+    }
+
+    @Test
+    void getTasksByProjectId_whenProjectExists_returnsOk200() throws Exception {
+        UUID projectId = UUID.randomUUID();
+        TaskResponse task = new TaskResponse(
+                UUID.randomUUID(), projectId, null, null, "Task 1", "Desc", TaskStatus.TODO, TaskPriority.MEDIUM, Instant.now()
+        );
+        given(taskService.getTasksByProjectId(projectId)).willReturn(List.of(task));
+
+        mockMvc.perform(get("/api/v1/projects/{projectId}/tasks", projectId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].title").value("Task 1"))
+                .andExpect(jsonPath("$[0].status").value("TODO"));
     }
 }
