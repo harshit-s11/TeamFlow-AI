@@ -43,15 +43,48 @@ Completed modules:
 
 ---
 
+## Phase S2 — Frontend & Feature Development
+
+**Status:** 🔄 In Progress
+
+Completed modules:
+
+- [x] **S2-1 — React Frontend Foundation & Authentication Flow** (Commit `3bbd261`)
+  - React + Vite + TypeScript frontend initialization
+  - React Router DOM SPA navigation & layout
+  - Axios API client with Bearer token request interceptor & error response handling
+  - JWT `tokenStorage` abstraction using `localStorage`
+  - `AuthContext` user session management (`login`, `register`, `logout`)
+  - `PublicRoute` and `ProtectedRoute` client-side route guards
+  - Login (`/login`) and Register (`/register`) views
+  - Protected Dashboard (`/`) & System Health (`/health`) components
+  - Custom 404 Not Found fallback view
+  - Spring Boot backend CORS configuration for `http://localhost:5173`
+  - Vitest test suite setup & production bundle build verification
+
+- [x] **S2-2 — Team & Project Management UI** (Commit `9112df0`)
+  - Team, Project, and User API service modules (`teamApi.ts`, `projectApi.ts`, `userApi.ts`)
+  - Team and Project TypeScript DTO request/response models
+  - Reusable UI primitives (`Modal`, `ConfirmDialog`, `LoadingSpinner`, `EmptyState`)
+  - Teams list view (`/teams`) & Team detail / roster view (`/teams/:id`)
+  - Team creation modal, member invitation modal, member removal, and team deletion
+  - Projects list view (`/projects`) & Project detail / roster view (`/projects/:id`)
+  - Project creation modal, member invitation modal, member removal, and project deletion
+  - `ADMIN` user lookup for member selection
+  - Route & Navbar integration for Teams and Projects
+  - Automated Vitest service unit tests and live browser verification
+
+---
+
 ## Future Phase Planning
 
-Post-S1-6 milestones are currently not formally specified in the project roadmap.
+Post-S2-2 milestones are not yet formally specified in the project roadmap.
 
-### Potential Future Directions (Proposed / Uncommitted)
+### Potential Future Directions (PROPOSED / UNCOMMITTED)
 
 The following areas represent candidate directions for future project phases:
 
-- **Frontend Development Phase**: Build a modern React + Vite SPA connecting to backend REST APIs.
+- **Sprint & Task Kanban UI**: Interactive Sprint planning and Task Kanban boards with status columns (`TODO`, `IN_PROGRESS`, `IN_REVIEW`, `DONE`).
 - **Advanced Task Management**: Task status state machine transitions, priority escalation, activity audit logging.
 - **AI Integration Phase**: LLM-powered sprint velocity forecasting, task breakdown generation, and automated standup summaries.
 - **DevOps & Containerization**: Dockerization of backend, frontend, and PostgreSQL with Docker Compose.

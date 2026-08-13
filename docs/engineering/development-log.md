@@ -302,8 +302,56 @@ Enforce service-layer resource authorization, membership access checks, role-bas
 
 ---
 
+## S2-1 — React Frontend Foundation & Authentication Flow
+
+**Commit**: `3bbd261 feat(frontend): implement React frontend foundation and authentication flow`
+
+**Objective**
+
+Establish the modern single-page application (SPA) frontend foundation, setting up React 18, Vite 6, TypeScript 5, React Router DOM, Axios HTTP client, token storage abstractions, authentication context, and route protection guards.
+
+**Completed**
+
+- Initialized React 18 + Vite 6 + TypeScript 5 single-page application in `frontend/`.
+- Configured Vanilla CSS design system with HSL color tokens, typography scales, card containers, form controls, badges, and alerts in `index.css`.
+- Implemented TypeScript DTO models matching Spring Boot schemas (`UserResponse`, `AuthResponse`, `TeamResponse`, `ProjectResponse`, `SprintResponse`, `TaskResponse`, `ApiErrorResponse`).
+- Built `tokenStorage.ts` abstraction managing `localStorage` access for JWT bearer tokens and user session data.
+- Built `apiClient.ts` using Axios with request `Authorization: Bearer <token>` injection and automated HTTP 401 token clearing interceptor.
+- Created `AuthContext.tsx` handling stateless user session lifecycle (`login`, `register`, `logout`).
+- Implemented client-side route guards (`PublicRoute` and `ProtectedRoute`).
+- Built primary pages and components: `LoginPage`, `RegisterPage`, `DashboardPage`, `HealthCheck`, `NotFoundPage`, and `Navbar`.
+- Configured Spring Boot backend CORS support in `SecurityConfig.java` allowing `http://localhost:5173`.
+- Added Vitest test suite (`tokenStorage.test.ts`, `apiClient.test.ts`) passing 5/5 tests cleanly.
+- Verified TypeScript compilation (`tsc && vite build`) with zero errors.
+
+---
+
+## S2-2 — Team & Project Management UI
+
+**Commit**: `9112df0 feat(frontend): implement team and project management UI`
+
+**Objective**
+
+Build interactive frontend feature pages and components for Team Management and Project Management, integrating with backend REST APIs (`/api/v1/teams`, `/api/v1/projects`, `/api/v1/users`).
+
+**Completed**
+
+- Implemented API service modules (`teamApi.ts`, `projectApi.ts`, `userApi.ts`).
+- Created TypeScript request DTOs (`TeamCreateRequest`, `TeamUpdateRequest`, `ProjectCreateRequest`, `ProjectUpdateRequest`, member request models).
+- Implemented reusable UI primitives (`Modal`, `ConfirmDialog`, `LoadingSpinner`, `EmptyState`).
+- Built Team Management views: `TeamsPage` (`/teams`), `TeamDetailPage` (`/teams/:id`), `TeamCard`, `CreateTeamModal`, and `AddTeamMemberModal`.
+- Built Project Management views: `ProjectsPage` (`/projects`), `ProjectDetailPage` (`/projects/:id`), `ProjectCard`, `CreateProjectModal`, and `AddProjectMemberModal`.
+- Added `ADMIN` user lookup dropdown for inviting existing system users to teams and projects.
+- Integrated Team and Project routes into `AppRoutes.tsx` and `Navbar.tsx`.
+- Enforced membership authorization handling in UI (displaying structured `403 Forbidden` error state for non-member detail requests).
+- Expanded Vitest test suite (`teamApi.test.ts`, `projectApi.test.ts`) reaching 7/7 tests passing (100% pass rate).
+- Verified production build output (`dist/`) and end-to-end browser functionality against Spring Boot API.
+
+---
+
 ## Current Status
 
-Phase S1 — Project Foundation is 100% complete and fully verified.
-The repository contains 140 passing automated tests.
-The backend is secure, modular, and ready for future feature phases.
+- Phase S1 — Backend Foundation: **COMPLETE**
+- S2-1 — Frontend Foundation: **COMPLETE** (`3bbd261`)
+- S2-2 — Team & Project Management UI: **COMPLETE** (`9112df0`)
+- Post-S2-2 milestones: **Not yet formally specified**.

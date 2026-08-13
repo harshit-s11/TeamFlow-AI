@@ -26,22 +26,30 @@ The project serves as a portfolio application for Software Development Engineer 
 - **Database Migrations**: Flyway (`V1__create_core_schema.sql`, `V2__add_authentication_fields.sql`)
 - **Security**: Spring Security 7.0, BCrypt (`PasswordEncoder` strength 12), JJWT 0.12.6
 
+### Frontend
+- **Framework**: React 18
+- **Build Tool**: Vite 6
+- **Language**: TypeScript 5
+- **Routing**: React Router DOM 6
+- **HTTP Client**: Axios 1.7
+- **Testing**: Vitest 3.0 + Testing Library
+- **Styling**: Vanilla CSS (HSL design tokens, modular component primitives)
+
 ### Database
 - **Engine**: PostgreSQL 16+
 
 ### Containerization & Deployment
 - **Containerization**: Docker / Docker Compose *(planned)*
 
-### Frontend
-- **Framework**: React + Vite *(planned)*
-
 ---
 
 ## Architecture Pattern
 
-TeamFlow AI strictly follows a clean 5-layer backend architecture:
+TeamFlow AI strictly follows a clean full-stack architecture:
 
 ```text
+React 18 + Vite SPA (Frontend)
+    ↓ Axios HTTP (Bearer JWT)
 Controller (REST API Layer)
     ↓
 Service (Domain Business Logic & Security Authorization)
@@ -101,15 +109,15 @@ PostgreSQL (Database)
 
 ## Testing & Verification
 
-- **Automated Test Suite**: 140 tests executed.
-- **Pass Rate**: 100% (140 passed, 0 failed).
-- **Coverage**: Repository integration tests, service unit tests, MockMvc controller slice tests, JWT security tests, and end-to-end authorization integration tests.
+- **Backend Test Suite**: 140 automated tests executed (100% pass rate).
+- **Frontend Test Suite**: 7 Vitest unit/integration tests executed (100% pass rate).
+- **Production Build**: Clean TypeScript compilation (`tsc && vite build`) with zero errors.
 
 ---
 
 ## Current Status
 
-**Current Phase:** S1 — Project Foundation (Backend Complete)
+**Current Phase:** Phase S2 — Frontend & Feature Development
 
 Completed Milestones:
 
@@ -120,12 +128,17 @@ Completed Milestones:
 - ✅ **S1-4** — Core CRUD APIs (Users, Teams, Projects, Sprints, Tasks)
 - ✅ **S1-5** — Authentication & JWT Security
 - ✅ **S1-6** — RBAC & Resource Authorization Model
+- ✅ **S2-1** — React Frontend Foundation & Authentication Flow (`3bbd261`)
+- ✅ **S2-2** — Team & Project Management UI (`9112df0`)
+
+*Note: Post-S2-2 milestones are not yet formally specified in the project roadmap.*
 
 ---
 
-## Potential Future Work (Proposed)
+## Potential Future Work (Proposed / Uncommitted)
 
-- React + Vite frontend implementation.
+- Sprint planning frontend UI.
+- Task Kanban board frontend UI.
 - Docker containerization & Docker Compose environment.
 - Advanced task status state machine transitions & audit logging.
 - AI assistant integration.

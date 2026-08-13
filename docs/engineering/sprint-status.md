@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-Phase S1 — Project Foundation (Completed)
+Phase S2 — Frontend & Feature Development (In Progress)
 
 ---
 
 ## Current Module
 
-S1-6 — RBAC & Resource Authorization Model (Completed — Commit `d6d39b6`)
+S2-2 — Team & Project Management UI (Completed — Commit `9112df0`)
 
 ---
 
@@ -23,6 +23,8 @@ S1-6 — RBAC & Resource Authorization Model (Completed — Commit `d6d39b6`)
 | **S1-4 Core CRUD APIs** | **COMPLETE** | REST endpoints for Users, Teams, Projects, Sprints, Tasks (95 tests) |
 | **S1-5 Authentication & JWT** | **COMPLETE** | `V2` migration, `UserAccount`, BCrypt strength 12, JJWT stateless security (117 tests) |
 | **S1-6 RBAC & Authorization** | **COMPLETE** | `USER`/`ADMIN` roles, membership checks, IDOR protection, 140/140 tests passing |
+| **S2-1 Frontend Foundation** | **COMPLETE** | React + Vite + TS, Axios Bearer interceptor, AuthContext, Route Guards, CORS (Commit `3bbd261`) |
+| **S2-2 Team & Project UI** | **COMPLETE** | Teams & Projects list/detail pages, member rosters, modals, 7/7 Vitest tests passing (Commit `9112df0`) |
 
 ---
 
@@ -53,9 +55,16 @@ S1-6 — RBAC & Resource Authorization Model (Completed — Commit `d6d39b6`)
 
 ---
 
+## Completed S2 Modules
+
+- [x] S2-1 — React Frontend Foundation & Authentication Flow
+- [x] S2-2 — Team & Project Management UI
+
+---
+
 ## Next Phase
 
-Pending Specification (Post-S1-6 Planning)
+Pending Specification (Post-S2-2 Planning)
 
 ---
 
