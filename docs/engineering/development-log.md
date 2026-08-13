@@ -208,8 +208,102 @@ Verify the complete development environment and establish production-quality pro
 
 ---
 
+## S1-1 — Application Layer Foundation & DTO Baseline
+
+**Commit**: `53a109c feat(backend): implement API and application layer foundation`
+
+**Objective**
+
+Establish base DTO infrastructure and global exception handling for standard REST error formatting.
+
+**Completed**
+
+- Created `ApiErrorResponse` standard error payload representation.
+- Implemented `GlobalExceptionHandler` for centralized exception translation (`400`, `404`, `500`).
+
+---
+
+## S1-2 & S1-3 — Core Domain Model & Database Schema
+
+**Commit**: `11c601a feat(backend): implement core domain model and Flyway database migrations`
+
+**Objective**
+
+Define immutable domain record entities and Flyway database schema migration baseline.
+
+**Completed**
+
+- Created domain record models: `User`, `Team`, `Project`, `Sprint`, `Task`.
+- Added Flyway migration `V1__create_core_schema.sql` creating `users`, `teams`, `team_members`, `projects`, `project_members`, `sprints`, and `tasks`.
+- Implemented Spring `JdbcTemplate` data access repositories.
+
+---
+
+## S1-4 — Core CRUD APIs
+
+**Commits**:
+- `623732e feat(backend): implement Users CRUD API and exception handling`
+- `e33a66a feat(backend): implement Teams CRUD and Team Membership APIs`
+- `65a9b68 feat(backend): implement Projects CRUD and Project Membership APIs`
+- `30d64cf feat(backend): implement Sprints CRUD API and project-scoped sprint endpoints`
+- `7484988 feat(backend): implement Tasks CRUD API and scoped task endpoints`
+
+**Objective**
+
+Implement full CRUD REST controllers, business services, and scoped child queries across core entities.
+
+**Completed**
+
+- Created Controllers and Services for Users, Teams, Projects, Sprints, and Tasks.
+- Implemented junction table membership management for `team_members` and `project_members`.
+- Implemented scoped query endpoints (`/projects/{id}/sprints`, `/projects/{id}/tasks`, `/sprints/{id}/tasks`).
+- Reached 95 passing automated unit and controller slice tests.
+
+---
+
+## S1-5 — Authentication & JWT Security
+
+**Commits**:
+- `1ebac5c feat(backend): add authentication data model and password security foundation`
+- `16fdb65 feat(backend): implement JWT authentication and secure REST APIs`
+
+**Objective**
+
+Introduce password security, Flyway `V2` user account schema, and stateless JWT token authentication.
+
+**Completed**
+
+- Added Flyway migration `V2__add_authentication_fields.sql` (`password_hash VARCHAR(255)`, `role VARCHAR(50) DEFAULT 'USER'`).
+- Integrated Spring Security 7.0 and JJWT 0.12.6 dependencies.
+- Configured `BCryptPasswordEncoder` with strength 12.
+- Created `JwtService`, `JwtAuthenticationFilter`, `AuthService`, and `AuthController` (`/api/v1/auth/register`, `/api/v1/auth/login`).
+- Configured stateless Spring Security policy, protecting `/api/v1/**` endpoints while permitting auth and health check routes.
+- Expanded test suite to 117 passing automated tests.
+
+---
+
+## S1-6 — Role-Based Access Control & Resource Authorization Model
+
+**Commit**: `d6d39b6 feat(backend): implement RBAC and resource authorization model`
+
+**Objective**
+
+Enforce service-layer resource authorization, membership access checks, role-based restrictions (`USER` vs `ADMIN`), and IDOR protection.
+
+**Completed**
+
+- Created `SecurityUtils` utility helper for extracting authenticated user identity (`UUID`) and verifying `ADMIN` authorities.
+- Updated `UserService`: Restricted full user listing and creation to `ADMIN` only; enforced self-or-admin access on single-user operations.
+- Updated `TeamService` & `ProjectService`: Enforced `team_members` / `project_members` or `ADMIN` checks. Auto-enrolled creator as a member upon resource creation within a `@Transactional` boundary.
+- Updated `SprintService` & `TaskService`: Enforced project-inherited membership checks (`project_members` of parent project) or `ADMIN` checks across all CRUD operations and scoped routes.
+- Updated `GlobalExceptionHandler`: Added `@ExceptionHandler(AccessDeniedException.class)` returning structured `403 Forbidden` (`ApiErrorResponse`).
+- Expanded automated integration test suite (`AuthorizationIntegrationTest`) verifying authentication, authorization, IDOR protection, role spoofing prevention, and scoped route enforcement.
+- Final test verification result: **140/140 automated tests passed (100% pass rate, 0 failures)**.
+
+---
+
 ## Current Status
 
-The project setup phase is complete.
-
-The repository is now ready for feature development.
+Phase S1 — Project Foundation is 100% complete and fully verified.
+The repository contains 140 passing automated tests.
+The backend is secure, modular, and ready for future feature phases.

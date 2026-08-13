@@ -28,14 +28,30 @@ Completed modules:
 
 ---
 
-## Phase S1 — Project Foundation
+## Phase S1 — Project Foundation (Backend)
 
-**Status:** ⏳ Planned
+**Status:** ✅ Completed
 
-This phase will establish the core backend foundation of TeamFlow AI.
+Completed modules:
+
+- [x] S1-1 — Application Layer Foundation & DTO Infrastructure
+- [x] S1-2 — Core Domain Model & Database Schema (`V1__create_core_schema.sql`)
+- [x] S1-3 — Repository/Data Access Layer (`JdbcTemplate`)
+- [x] S1-4 — Core CRUD APIs (Users, Teams, Projects, Sprints, Tasks)
+- [x] S1-5 — Authentication & JWT Security (`V2__add_authentication_fields.sql`, BCrypt, JJWT)
+- [x] S1-6 — RBAC & Resource Authorization Model (`USER`/`ADMIN` roles, Team/Project Membership, IDOR protection)
 
 ---
 
-## Future Phases
+## Future Phase Planning
 
-Additional milestones will be documented as the project evolves.
+Post-S1-6 milestones are currently not formally specified in the project roadmap.
+
+### Potential Future Directions (Proposed / Uncommitted)
+
+The following areas represent candidate directions for future project phases:
+
+- **Frontend Development Phase**: Build a modern React + Vite SPA connecting to backend REST APIs.
+- **Advanced Task Management**: Task status state machine transitions, priority escalation, activity audit logging.
+- **AI Integration Phase**: LLM-powered sprint velocity forecasting, task breakdown generation, and automated standup summaries.
+- **DevOps & Containerization**: Dockerization of backend, frontend, and PostgreSQL with Docker Compose.

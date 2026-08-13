@@ -9,8 +9,8 @@ The project serves as a portfolio application for Software Development Engineer 
 ## Project Objectives
 
 - Build a production-quality full-stack application.
-- Strengthen Java and Spring Boot expertise.
-- Practice scalable backend architecture and REST API design.
+- Strengthen Java 21 and Spring Boot expertise.
+- Practice scalable backend architecture, REST API design, and security engineering.
 - Apply modern software engineering best practices.
 - Create a strong GitHub portfolio project for interviews.
 
@@ -19,76 +19,116 @@ The project serves as a portfolio application for Software Development Engineer 
 ## Technology Stack
 
 ### Backend
-- Java 21
-- Spring Boot
-- Gradle (Gradle Wrapper)
-
-### Frontend
-- React *(planned)*
+- **Language**: Java 21
+- **Framework**: Spring Boot 4.1.0
+- **Build System**: Gradle (Gradle Wrapper)
+- **Database Access**: Spring JDBC (`JdbcTemplate`)
+- **Database Migrations**: Flyway (`V1__create_core_schema.sql`, `V2__add_authentication_fields.sql`)
+- **Security**: Spring Security 7.0, BCrypt (`PasswordEncoder` strength 12), JJWT 0.12.6
 
 ### Database
-- PostgreSQL
+- **Engine**: PostgreSQL 16+
 
-### Containerization
-- Docker
+### Containerization & Deployment
+- **Containerization**: Docker / Docker Compose *(planned)*
 
-### Development Tools
-- IntelliJ IDEA Community
-- VS Code
-- Postman
-- Draw.io (diagrams.net Desktop)
-- Figma
+### Frontend
+- **Framework**: React + Vite *(planned)*
 
 ---
 
-## Repository Structure
+## Architecture Pattern
+
+TeamFlow AI strictly follows a clean 5-layer backend architecture:
 
 ```text
-TeamFlow-AI/
-├── backend/
-├── frontend/
-├── docs/
-├── diagrams/
-├── assets/
-└── README.md
+Controller (REST API Layer)
+    ↓
+Service (Domain Business Logic & Security Authorization)
+    ↓
+Repository (Data Access Layer)
+    ↓
+JdbcTemplate (Parameterized SQL Execution)
+    ↓
+PostgreSQL (Database)
 ```
+
+---
+
+## API Surface
+
+| Endpoint | Method | Access / Role Required | Description |
+| :--- | :---: | :--- | :--- |
+| `/api/v1/auth/register` | `POST` | Public | Register new user account |
+| `/api/v1/auth/login` | `POST` | Public | Authenticate user & return JWT token |
+| `/api/v1/health` | `GET` | Public | Application health check |
+| `/api/v1/users` | `GET`, `POST` | `ADMIN` | List all users or create user |
+| `/api/v1/users/{id}` | `GET`, `PUT`, `DELETE` | Self or `ADMIN` | Get, update, or delete user |
+| `/api/v1/teams` | `GET`, `POST` | Authenticated | List user's teams or create team |
+| `/api/v1/teams/{id}` | `GET`, `PUT`, `DELETE` | Team Member or `ADMIN` | Team CRUD operations |
+| `/api/v1/teams/{id}/members` | `GET`, `POST`, `DELETE` | Team Member or `ADMIN` | Team membership management |
+| `/api/v1/projects` | `GET`, `POST` | Authenticated | List user's projects or create project |
+| `/api/v1/projects/{id}` | `GET`, `PUT`, `DELETE` | Project Member or `ADMIN` | Project CRUD operations |
+| `/api/v1/projects/{id}/members` | `GET`, `POST`, `DELETE` | Project Member or `ADMIN` | Project membership management |
+| `/api/v1/sprints` | `GET`, `POST` | `ADMIN` (GET) / Project Member (POST) | List all sprints or create sprint |
+| `/api/v1/sprints/{id}` | `GET`, `PUT`, `DELETE` | Project Member or `ADMIN` | Sprint CRUD operations |
+| `/api/v1/projects/{id}/sprints` | `GET` | Project Member or `ADMIN` | List project-scoped sprints |
+| `/api/v1/tasks` | `GET`, `POST` | `ADMIN` (GET) / Project Member (POST) | List all tasks or create task |
+| `/api/v1/tasks/{id}` | `GET`, `PUT`, `DELETE` | Project Member or `ADMIN` | Task CRUD operations |
+| `/api/v1/projects/{id}/tasks` | `GET` | Project Member or `ADMIN` | List project-scoped tasks |
+| `/api/v1/sprints/{id}/tasks` | `GET` | Project Member or `ADMIN` | List sprint-scoped tasks |
+
+---
+
+## Security Model
+
+- **Password Hashing**: BCrypt (`BCryptPasswordEncoder` with strength 12).
+- **Stateless Authentication**: JWT bearer token authentication (15-minute token lifespan).
+- **Role-Based Access Control (RBAC)**: Supports `USER` and `ADMIN` roles.
+- **Resource Membership Authorization**: Access to teams, projects, sprints, and tasks is restricted to enrolled members of `team_members` or `project_members`.
+- **Creator Auto-Membership**: Creating a team or project automatically enrolls the creator into the membership table inside a single transaction.
+- **IDOR Protection**: Requests attempting to access resources belonging to another team/project without membership return `HTTP 403 Forbidden`.
+- **Structured Error Responses**: `401 Unauthorized` for missing/invalid tokens; `403 Forbidden` for unauthorized resource access (`ApiErrorResponse`).
+
+---
+
+## Database Schema & Migrations
+
+- `V1__create_core_schema.sql`: Core schema for `users`, `teams`, `team_members`, `projects`, `project_members`, `sprints`, `tasks`.
+- `V2__add_authentication_fields.sql`: Additive migration adding `password_hash VARCHAR(255)` and `role VARCHAR(50) DEFAULT 'USER'`.
+
+---
+
+## Testing & Verification
+
+- **Automated Test Suite**: 140 tests executed.
+- **Pass Rate**: 100% (140 passed, 0 failed).
+- **Coverage**: Repository integration tests, service unit tests, MockMvc controller slice tests, JWT security tests, and end-to-end authorization integration tests.
 
 ---
 
 ## Current Status
 
-**Current Phase:** Project Setup
+**Current Phase:** S1 — Project Foundation (Backend Complete)
 
-Completed:
+Completed Milestones:
 
-- ✅ S0-1 — GitHub Repository
-- ✅ S0-2 — Local Development Workspace
-- ✅ S0-3 — Install & Configure Git
-- ✅ S0-4 — Install Java 21
-- ✅ S0-5 — Install & Configure IntelliJ IDEA
-- ✅ S0-6 — Initialize Spring Boot Backend
-- ✅ S0-7 — Install & Configure Docker Desktop
-- ✅ S0-8 — Install & Configure PostgreSQL
-- ✅ S0-9 — Install & Configure Postman
-- ✅ S0-10 — Install & Configure Draw.io
-- 🚧 S0-11 — Final Setup Audit & Documentation
-
-Feature development has not yet begun.
+- ✅ **S0-1 through S0-11** — Project Setup Phase
+- ✅ **S1-1** — Backend Foundation & Application Baseline
+- ✅ **S1-2** — API & Application Layer Foundation
+- ✅ **S1-3** — Core Domain & Database Model
+- ✅ **S1-4** — Core CRUD APIs (Users, Teams, Projects, Sprints, Tasks)
+- ✅ **S1-5** — Authentication & JWT Security
+- ✅ **S1-6** — RBAC & Resource Authorization Model
 
 ---
 
-## Documentation
+## Potential Future Work (Proposed)
 
-Project documentation is organized under the `docs/` directory.
-
-Key areas include:
-
-- Engineering
-- Architecture
-- API
-- Deployment
-- Features
-- Project
+- React + Vite frontend implementation.
+- Docker containerization & Docker Compose environment.
+- Advanced task status state machine transitions & audit logging.
+- AI assistant integration.
 
 ---
 
