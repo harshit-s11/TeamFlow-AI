@@ -6,11 +6,14 @@ import com.teamflow.backend.api.dto.TeamUpdateRequest;
 import com.teamflow.backend.api.dto.UserResponse;
 import com.teamflow.backend.common.exception.DuplicateResourceException;
 import com.teamflow.backend.common.exception.ResourceNotFoundException;
+import com.teamflow.backend.common.security.SecurityUtils;
 import com.teamflow.backend.domain.model.Team;
 import com.teamflow.backend.repository.TeamRepository;
 import com.teamflow.backend.repository.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,20 +29,34 @@ public class TeamService {
         this.userRepository = userRepository;
     }
 
+    @Transactional
     public TeamResponse createTeam(TeamCreateRequest request) {
+        UUID creatorId = SecurityUtils.getCurrentUserId();
         Team team = Team.create(request.name());
-        Team saved = teamRepository.save(team);
-        return TeamResponse.fromDomain(saved);
+        Team savedTeam = teamRepository.save(team);
+
+        teamRepository.addMember(savedTeam.id(), creatorId);
+        return TeamResponse.fromDomain(savedTeam);
     }
 
     public TeamResponse getTeamById(UUID id) {
         Team team = teamRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + id));
+
+        checkTeamMemberOrAdmin(id);
         return TeamResponse.fromDomain(team);
     }
 
     public List<TeamResponse> getAllTeams() {
-        return teamRepository.findAll()
+        if (SecurityUtils.isAdmin()) {
+            return teamRepository.findAll()
+                    .stream()
+                    .map(TeamResponse::fromDomain)
+                    .toList();
+        }
+
+        UUID userId = SecurityUtils.getCurrentUserId();
+        return teamRepository.findByMemberId(userId)
                 .stream()
                 .map(TeamResponse::fromDomain)
                 .toList();
@@ -49,54 +66,85 @@ public class TeamService {
         Team existingTeam = teamRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + id));
 
-        Team updatedTeam = new Team(existingTeam.id(), request.name(), existingTeam.createdAt());
-        Team saved = teamRepository.save(updatedTeam);
-        return TeamResponse.fromDomain(saved);
+        checkTeamMemberOrAdmin(id);
+
+        Team teamToSave = new Team(existingTeam.id(), request.name(), existingTeam.createdAt());
+        Team updatedTeam = teamRepository.save(teamToSave);
+        return TeamResponse.fromDomain(updatedTeam);
     }
 
     public void deleteTeam(UUID id) {
-        if (teamRepository.findById(id).isEmpty()) {
-            throw new ResourceNotFoundException("Team not found with id: " + id);
-        }
+        teamRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + id));
+
+        checkTeamMemberOrAdmin(id);
+
         teamRepository.deleteById(id);
     }
 
-    public void addMember(UUID teamId, UUID userId) {
-        if (teamRepository.findById(teamId).isEmpty()) {
-            throw new ResourceNotFoundException("Team not found with id: " + teamId);
-        }
-        if (userRepository.findById(userId).isEmpty()) {
-            throw new ResourceNotFoundException("User not found with id: " + userId);
-        }
-
-        try {
-            teamRepository.addMember(teamId, userId);
-        } catch (DataIntegrityViolationException e) {
-            throw new DuplicateResourceException("User with id " + userId + " is already a member of team " + teamId);
-        }
-    }
-
-    public void removeMember(UUID teamId, UUID userId) {
-        if (teamRepository.findById(teamId).isEmpty()) {
-            throw new ResourceNotFoundException("Team not found with id: " + teamId);
-        }
-        if (userRepository.findById(userId).isEmpty()) {
-            throw new ResourceNotFoundException("User not found with id: " + userId);
-        }
-
-        boolean removed = teamRepository.removeMember(teamId, userId);
-        if (!removed) {
-            throw new ResourceNotFoundException("User with id " + userId + " is not a member of team " + teamId);
-        }
-    }
-
     public List<UserResponse> getTeamMembers(UUID teamId) {
-        if (teamRepository.findById(teamId).isEmpty()) {
-            throw new ResourceNotFoundException("Team not found with id: " + teamId);
-        }
+        teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + teamId));
+
+        checkTeamMemberOrAdmin(teamId);
+
         return teamRepository.findMembers(teamId)
                 .stream()
                 .map(UserResponse::fromDomain)
                 .toList();
+    }
+
+    public UserResponse addMember(UUID teamId, UUID userId) {
+        return addTeamMember(teamId, userId);
+    }
+
+    public UserResponse addTeamMember(UUID teamId, UUID userId) {
+        teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + teamId));
+
+        userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        checkTeamMemberOrAdmin(teamId);
+
+        try {
+            teamRepository.addMember(teamId, userId);
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicateResourceException("User is already a member of this team");
+        }
+
+        return userRepository.findById(userId)
+                .map(UserResponse::fromDomain)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+    }
+
+    public void removeMember(UUID teamId, UUID userId) {
+        removeTeamMember(teamId, userId);
+    }
+
+    public void removeTeamMember(UUID teamId, UUID userId) {
+        teamRepository.findById(teamId)
+                .orElseThrow(() -> new ResourceNotFoundException("Team not found with id: " + teamId));
+
+        userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        checkTeamMemberOrAdmin(teamId);
+
+        if (!teamRepository.isMember(teamId, userId)) {
+            throw new ResourceNotFoundException("User is not a member of team with id: " + teamId);
+        }
+
+        teamRepository.removeMember(teamId, userId);
+    }
+
+    private void checkTeamMemberOrAdmin(UUID teamId) {
+        if (SecurityUtils.isAdmin()) {
+            return;
+        }
+        UUID userId = SecurityUtils.getCurrentUserId();
+        if (!teamRepository.isMember(teamId, userId)) {
+            throw new AccessDeniedException("Access denied");
+        }
     }
 }

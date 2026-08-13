@@ -7,13 +7,19 @@ import com.teamflow.backend.common.exception.ResourceNotFoundException;
 import com.teamflow.backend.domain.model.Project;
 import com.teamflow.backend.domain.model.Sprint;
 import com.teamflow.backend.domain.model.SprintStatus;
+import com.teamflow.backend.domain.model.UserAccount;
 import com.teamflow.backend.repository.ProjectRepository;
 import com.teamflow.backend.repository.SprintRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -38,14 +44,29 @@ class SprintServiceTest {
 
     private SprintService sprintService;
 
+    private void setAuthUser(UUID userId, String role) {
+        UserAccount account = new UserAccount(userId, "Test User", "test@teamflow.com", "hash", role, Instant.now());
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                account, null, List.of(new SimpleGrantedAuthority("ROLE_" + role))
+        );
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
     @BeforeEach
     void setUp() {
         sprintService = new SprintService(sprintRepository, projectRepository);
     }
 
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
     @Test
-    void createSprint_whenValid_returnsSprintResponse() {
+    void createSprint_whenProjectMember_returnsSprintResponse() {
+        UUID userId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
+        setAuthUser(userId, "USER");
         SprintCreateRequest request = new SprintCreateRequest(
                 projectId,
                 "Sprint 1",
@@ -57,6 +78,7 @@ class SprintServiceTest {
         Sprint savedSprint = new Sprint(sprintId, projectId, "Sprint 1", request.startDate(), request.endDate(), SprintStatus.PLANNED, Instant.now());
 
         given(projectRepository.findById(projectId)).willReturn(Optional.of(new Project(projectId, "Proj", "Desc", Instant.now())));
+        given(projectRepository.isMember(projectId, userId)).willReturn(true);
         given(sprintRepository.save(any(Sprint.class))).willReturn(savedSprint);
 
         SprintResponse response = sprintService.createSprint(request);
@@ -67,8 +89,10 @@ class SprintServiceTest {
     }
 
     @Test
-    void createSprint_whenProjectNotFound_throwsResourceNotFoundException() {
+    void createSprint_whenNonProjectMember_throwsAccessDeniedException() {
+        UUID userId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
+        setAuthUser(userId, "USER");
         SprintCreateRequest request = new SprintCreateRequest(
                 projectId,
                 "Sprint 1",
@@ -77,16 +101,18 @@ class SprintServiceTest {
                 SprintStatus.PLANNED
         );
 
-        given(projectRepository.findById(projectId)).willReturn(Optional.empty());
+        given(projectRepository.findById(projectId)).willReturn(Optional.of(new Project(projectId, "Proj", "Desc", Instant.now())));
+        given(projectRepository.isMember(projectId, userId)).willReturn(false);
 
         assertThatThrownBy(() -> sprintService.createSprint(request))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining(projectId.toString());
+                .isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
     void createSprint_whenEndDateBeforeStartDate_throwsIllegalArgumentException() {
+        UUID userId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
+        setAuthUser(userId, "USER");
         SprintCreateRequest request = new SprintCreateRequest(
                 projectId,
                 "Sprint Invalid Dates",
@@ -96,15 +122,17 @@ class SprintServiceTest {
         );
 
         given(projectRepository.findById(projectId)).willReturn(Optional.of(new Project(projectId, "Proj", "Desc", Instant.now())));
+        given(projectRepository.isMember(projectId, userId)).willReturn(true);
 
         assertThatThrownBy(() -> sprintService.createSprint(request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("End date must not be before start date");
+                .hasMessageContaining("cannot be before startDate");
     }
 
     @Test
     void getSprintById_whenNotFound_throwsResourceNotFoundException() {
         UUID id = UUID.randomUUID();
+        setAuthUser(id, "USER");
         given(sprintRepository.findById(id)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> sprintService.getSprintById(id))
@@ -113,9 +141,11 @@ class SprintServiceTest {
     }
 
     @Test
-    void updateSprint_whenValid_returnsUpdatedResponse() {
+    void updateSprint_whenProjectMember_returnsUpdatedResponse() {
+        UUID userId = UUID.randomUUID();
         UUID sprintId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
+        setAuthUser(userId, "USER");
         SprintUpdateRequest request = new SprintUpdateRequest(
                 "Sprint 1 Updated",
                 LocalDate.now(),
@@ -126,6 +156,7 @@ class SprintServiceTest {
         Sprint updatedSprint = new Sprint(sprintId, projectId, "Sprint 1 Updated", request.startDate(), request.endDate(), SprintStatus.ACTIVE, existingSprint.createdAt());
 
         given(sprintRepository.findById(sprintId)).willReturn(Optional.of(existingSprint));
+        given(projectRepository.isMember(projectId, userId)).willReturn(true);
         given(sprintRepository.save(any(Sprint.class))).willReturn(updatedSprint);
 
         SprintResponse response = sprintService.updateSprint(sprintId, request);
@@ -135,11 +166,15 @@ class SprintServiceTest {
     }
 
     @Test
-    void deleteSprint_whenExists_deletesSprint() {
+    void deleteSprint_whenProjectMember_deletesSprint() {
+        UUID userId = UUID.randomUUID();
         UUID id = UUID.randomUUID();
-        Sprint existingSprint = new Sprint(id, UUID.randomUUID(), "Sprint 1", LocalDate.now(), LocalDate.now().plusDays(14), SprintStatus.PLANNED, Instant.now());
+        UUID projectId = UUID.randomUUID();
+        setAuthUser(userId, "USER");
+        Sprint existingSprint = new Sprint(id, projectId, "Sprint 1", LocalDate.now(), LocalDate.now().plusDays(14), SprintStatus.PLANNED, Instant.now());
 
         given(sprintRepository.findById(id)).willReturn(Optional.of(existingSprint));
+        given(projectRepository.isMember(projectId, userId)).willReturn(true);
 
         sprintService.deleteSprint(id);
 
@@ -147,16 +182,27 @@ class SprintServiceTest {
     }
 
     @Test
-    void getSprintsByProjectId_whenProjectExists_returnsSprintList() {
+    void getSprintsByProjectId_whenProjectMember_returnsSprintList() {
+        UUID userId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
+        setAuthUser(userId, "USER");
         Sprint sprint = new Sprint(UUID.randomUUID(), projectId, "Sprint 1", LocalDate.now(), LocalDate.now().plusDays(14), SprintStatus.PLANNED, Instant.now());
 
         given(projectRepository.findById(projectId)).willReturn(Optional.of(new Project(projectId, "Proj", "Desc", Instant.now())));
+        given(projectRepository.isMember(projectId, userId)).willReturn(true);
         given(sprintRepository.findByProjectId(projectId)).willReturn(List.of(sprint));
 
         List<SprintResponse> responses = sprintService.getSprintsByProjectId(projectId);
 
         assertThat(responses).hasSize(1);
         assertThat(responses.get(0).name()).isEqualTo("Sprint 1");
+    }
+
+    @Test
+    void getAllSprints_whenRegularUser_throwsAccessDeniedException() {
+        setAuthUser(UUID.randomUUID(), "USER");
+
+        assertThatThrownBy(() -> sprintService.getAllSprints())
+                .isInstanceOf(AccessDeniedException.class);
     }
 }

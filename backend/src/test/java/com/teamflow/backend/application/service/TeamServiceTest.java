@@ -8,14 +8,20 @@ import com.teamflow.backend.common.exception.DuplicateResourceException;
 import com.teamflow.backend.common.exception.ResourceNotFoundException;
 import com.teamflow.backend.domain.model.Team;
 import com.teamflow.backend.domain.model.User;
+import com.teamflow.backend.domain.model.UserAccount;
 import com.teamflow.backend.repository.TeamRepository;
 import com.teamflow.backend.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.Instant;
 import java.util.List;
@@ -39,13 +45,28 @@ class TeamServiceTest {
 
     private TeamService teamService;
 
+    private void setAuthUser(UUID userId, String role) {
+        UserAccount account = new UserAccount(userId, "Test User", "test@teamflow.com", "hash", role, Instant.now());
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                account, null, List.of(new SimpleGrantedAuthority("ROLE_" + role))
+        );
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
     @BeforeEach
     void setUp() {
         teamService = new TeamService(teamRepository, userRepository);
     }
 
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
     @Test
-    void createTeam_whenValid_returnsTeamResponse() {
+    void createTeam_whenValid_returnsTeamResponseAndAddsCreatorAsMember() {
+        UUID creatorId = UUID.randomUUID();
+        setAuthUser(creatorId, "USER");
         TeamCreateRequest request = new TeamCreateRequest("Core Infra");
         UUID teamId = UUID.randomUUID();
         Team savedTeam = new Team(teamId, "Core Infra", Instant.now());
@@ -56,11 +77,42 @@ class TeamServiceTest {
 
         assertThat(response.id()).isEqualTo(teamId);
         assertThat(response.name()).isEqualTo("Core Infra");
+        verify(teamRepository).addMember(teamId, creatorId);
+    }
+
+    @Test
+    void getTeamById_whenMember_returnsTeam() {
+        UUID userId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        setAuthUser(userId, "USER");
+        Team team = new Team(teamId, "Devs", Instant.now());
+
+        given(teamRepository.findById(teamId)).willReturn(Optional.of(team));
+        given(teamRepository.isMember(teamId, userId)).willReturn(true);
+
+        TeamResponse response = teamService.getTeamById(teamId);
+
+        assertThat(response.id()).isEqualTo(teamId);
+    }
+
+    @Test
+    void getTeamById_whenNonMember_throwsAccessDeniedException() {
+        UUID userId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        setAuthUser(userId, "USER");
+        Team team = new Team(teamId, "Devs", Instant.now());
+
+        given(teamRepository.findById(teamId)).willReturn(Optional.of(team));
+        given(teamRepository.isMember(teamId, userId)).willReturn(false);
+
+        assertThatThrownBy(() -> teamService.getTeamById(teamId))
+                .isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
     void getTeamById_whenNotFound_throwsResourceNotFoundException() {
         UUID id = UUID.randomUUID();
+        setAuthUser(id, "USER");
         given(teamRepository.findById(id)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> teamService.getTeamById(id))
@@ -69,13 +121,16 @@ class TeamServiceTest {
     }
 
     @Test
-    void updateTeam_whenValid_returnsUpdatedResponse() {
+    void updateTeam_whenMember_returnsUpdatedResponse() {
+        UUID userId = UUID.randomUUID();
         UUID teamId = UUID.randomUUID();
+        setAuthUser(userId, "USER");
         TeamUpdateRequest request = new TeamUpdateRequest("Platform Team");
         Team existingTeam = new Team(teamId, "Old Infra", Instant.now());
         Team updatedTeam = new Team(teamId, "Platform Team", existingTeam.createdAt());
 
         given(teamRepository.findById(teamId)).willReturn(Optional.of(existingTeam));
+        given(teamRepository.isMember(teamId, userId)).willReturn(true);
         given(teamRepository.save(any(Team.class))).willReturn(updatedTeam);
 
         TeamResponse response = teamService.updateTeam(teamId, request);
@@ -84,55 +139,50 @@ class TeamServiceTest {
     }
 
     @Test
-    void deleteTeam_whenTeamExists_deletesTeam() {
-        UUID id = UUID.randomUUID();
-        Team existingTeam = new Team(id, "To Delete", Instant.now());
+    void deleteTeam_whenMember_deletesTeam() {
+        UUID userId = UUID.randomUUID();
+        UUID teamId = UUID.randomUUID();
+        setAuthUser(userId, "USER");
+        Team existingTeam = new Team(teamId, "To Delete", Instant.now());
 
-        given(teamRepository.findById(id)).willReturn(Optional.of(existingTeam));
+        given(teamRepository.findById(teamId)).willReturn(Optional.of(existingTeam));
+        given(teamRepository.isMember(teamId, userId)).willReturn(true);
 
-        teamService.deleteTeam(id);
+        teamService.deleteTeam(teamId);
 
-        verify(teamRepository).deleteById(id);
+        verify(teamRepository).deleteById(teamId);
     }
 
     @Test
-    void addMember_whenValid_addsUserToTeam() {
+    void addTeamMember_whenValidMember_addsUserToTeam() {
+        UUID authUserId = UUID.randomUUID();
+        UUID targetUserId = UUID.randomUUID();
         UUID teamId = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
+        setAuthUser(authUserId, "USER");
 
         given(teamRepository.findById(teamId)).willReturn(Optional.of(new Team(teamId, "Devs", Instant.now())));
-        given(userRepository.findById(userId)).willReturn(Optional.of(new User(userId, "Ivy", "ivy@teamflow.com", Instant.now())));
+        given(userRepository.findById(targetUserId)).willReturn(Optional.of(new User(targetUserId, "Ivy", "ivy@teamflow.com", Instant.now())));
+        given(teamRepository.isMember(teamId, authUserId)).willReturn(true);
 
-        teamService.addMember(teamId, userId);
+        teamService.addTeamMember(teamId, targetUserId);
 
-        verify(teamRepository).addMember(teamId, userId);
+        verify(teamRepository).addMember(teamId, targetUserId);
     }
 
     @Test
-    void addMember_whenDuplicateMember_throwsDuplicateResourceException() {
+    void addTeamMember_whenDuplicateMember_throwsDuplicateResourceException() {
+        UUID authUserId = UUID.randomUUID();
+        UUID targetUserId = UUID.randomUUID();
         UUID teamId = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
+        setAuthUser(authUserId, "USER");
 
         given(teamRepository.findById(teamId)).willReturn(Optional.of(new Team(teamId, "Devs", Instant.now())));
-        given(userRepository.findById(userId)).willReturn(Optional.of(new User(userId, "Ivy", "ivy@teamflow.com", Instant.now())));
-        given(teamRepository.addMember(teamId, userId)).willThrow(new DataIntegrityViolationException("Duplicate key value violates unique constraint"));
+        given(userRepository.findById(targetUserId)).willReturn(Optional.of(new User(targetUserId, "Ivy", "ivy@teamflow.com", Instant.now())));
+        given(teamRepository.isMember(teamId, authUserId)).willReturn(true);
+        given(teamRepository.addMember(teamId, targetUserId)).willThrow(new DataIntegrityViolationException("Duplicate key value violates unique constraint"));
 
-        assertThatThrownBy(() -> teamService.addMember(teamId, userId))
+        assertThatThrownBy(() -> teamService.addTeamMember(teamId, targetUserId))
                 .isInstanceOf(DuplicateResourceException.class)
                 .hasMessageContaining("already a member");
-    }
-
-    @Test
-    void removeMember_whenMembershipDoesNotExist_throwsResourceNotFoundException() {
-        UUID teamId = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
-
-        given(teamRepository.findById(teamId)).willReturn(Optional.of(new Team(teamId, "Devs", Instant.now())));
-        given(userRepository.findById(userId)).willReturn(Optional.of(new User(userId, "Ivy", "ivy@teamflow.com", Instant.now())));
-        given(teamRepository.removeMember(teamId, userId)).willReturn(false);
-
-        assertThatThrownBy(() -> teamService.removeMember(teamId, userId))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("not a member");
     }
 }

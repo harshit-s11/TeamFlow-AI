@@ -68,6 +68,17 @@ public class ProjectRepository {
         return jdbcTemplate.query(sql, projectRowMapper);
     }
 
+    public List<Project> findByMemberId(UUID userId) {
+        String sql = """
+            SELECT p.id, p.name, p.description, p.created_at
+            FROM projects p
+            JOIN project_members pm ON p.id = pm.project_id
+            WHERE pm.user_id = ?
+            ORDER BY p.created_at DESC
+        """;
+        return jdbcTemplate.query(sql, projectRowMapper, userId);
+    }
+
     public boolean addMember(UUID projectId, UUID userId) {
         String sql = "INSERT INTO project_members (project_id, user_id) VALUES (?, ?)";
         return jdbcTemplate.update(sql, projectId, userId) > 0;
@@ -76,6 +87,12 @@ public class ProjectRepository {
     public boolean removeMember(UUID projectId, UUID userId) {
         String sql = "DELETE FROM project_members WHERE project_id = ? AND user_id = ?";
         return jdbcTemplate.update(sql, projectId, userId) > 0;
+    }
+
+    public boolean isMember(UUID projectId, UUID userId) {
+        String sql = "SELECT EXISTS (SELECT 1 FROM project_members WHERE project_id = ? AND user_id = ?)";
+        Boolean exists = jdbcTemplate.queryForObject(sql, Boolean.class, projectId, userId);
+        return Boolean.TRUE.equals(exists);
     }
 
     public List<User> findMembers(UUID projectId) {

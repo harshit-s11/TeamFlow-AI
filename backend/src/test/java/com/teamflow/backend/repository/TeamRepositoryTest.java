@@ -8,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -38,5 +39,26 @@ class TeamRepositoryTest {
         List<User> remainingMembers = teamRepository.findMembers(team.id());
         assertThat(remainingMembers).hasSize(1);
         assertThat(remainingMembers.get(0).email()).isEqualTo("dana@teamflow.com");
+    }
+
+    @Test
+    void isMember_whenMembershipExists_returnsTrue() {
+        Team team = teamRepository.save(Team.create("Dev Team"));
+        User user = userRepository.save(User.create("Alice", "alice.team@teamflow.com"));
+        teamRepository.addMember(team.id(), user.id());
+
+        boolean isMember = teamRepository.isMember(team.id(), user.id());
+
+        assertThat(isMember).isTrue();
+    }
+
+    @Test
+    void isMember_whenMembershipDoesNotExist_returnsFalse() {
+        Team team = teamRepository.save(Team.create("Dev Team 2"));
+        User user = userRepository.save(User.create("Bob", "bob.team@teamflow.com"));
+
+        boolean isMember = teamRepository.isMember(team.id(), user.id());
+
+        assertThat(isMember).isFalse();
     }
 }

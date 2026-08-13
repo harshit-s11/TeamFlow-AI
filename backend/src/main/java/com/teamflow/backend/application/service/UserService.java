@@ -5,9 +5,11 @@ import com.teamflow.backend.api.dto.UserResponse;
 import com.teamflow.backend.api.dto.UserUpdateRequest;
 import com.teamflow.backend.common.exception.DuplicateResourceException;
 import com.teamflow.backend.common.exception.ResourceNotFoundException;
+import com.teamflow.backend.common.security.SecurityUtils;
 import com.teamflow.backend.domain.model.User;
 import com.teamflow.backend.repository.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,26 +25,34 @@ public class UserService {
     }
 
     public UserResponse createUser(UserCreateRequest request) {
+        if (!SecurityUtils.isAdmin()) {
+            throw new AccessDeniedException("Access denied");
+        }
+
         if (userRepository.findByEmail(request.email()).isPresent()) {
-            throw new DuplicateResourceException("User already exists with email: " + request.email());
+            throw new DuplicateResourceException("User with email already exists: " + request.email());
         }
 
         try {
             User user = User.create(request.name(), request.email());
-            User saved = userRepository.save(user);
-            return UserResponse.fromDomain(saved);
+            User savedUser = userRepository.save(user);
+            return UserResponse.fromDomain(savedUser);
         } catch (DataIntegrityViolationException e) {
-            throw new DuplicateResourceException("User already exists with email: " + request.email());
+            throw new DuplicateResourceException("User with email already exists: " + request.email());
         }
     }
 
     public UserResponse getUserById(UUID id) {
+        SecurityUtils.checkSelfOrAdmin(id);
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         return UserResponse.fromDomain(user);
     }
 
     public List<UserResponse> getAllUsers() {
+        if (!SecurityUtils.isAdmin()) {
+            throw new AccessDeniedException("Access denied");
+        }
         return userRepository.findAll()
                 .stream()
                 .map(UserResponse::fromDomain)
@@ -50,28 +60,25 @@ public class UserService {
     }
 
     public UserResponse updateUser(UUID id, UserUpdateRequest request) {
+        SecurityUtils.checkSelfOrAdmin(id);
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
-        userRepository.findByEmail(request.email()).ifPresent(otherUser -> {
-            if (!otherUser.id().equals(id)) {
-                throw new DuplicateResourceException("User already exists with email: " + request.email());
-            }
-        });
-
-        try {
-            User updatedUser = new User(existingUser.id(), request.name(), request.email(), existingUser.createdAt());
-            User saved = userRepository.save(updatedUser);
-            return UserResponse.fromDomain(saved);
-        } catch (DataIntegrityViolationException e) {
-            throw new DuplicateResourceException("User already exists with email: " + request.email());
+        if (!existingUser.email().equalsIgnoreCase(request.email())
+                && userRepository.findByEmail(request.email()).isPresent()) {
+            throw new DuplicateResourceException("User with email already exists: " + request.email());
         }
+
+        User userToSave = new User(existingUser.id(), request.name(), request.email(), existingUser.createdAt());
+        User updatedUser = userRepository.save(userToSave);
+        return UserResponse.fromDomain(updatedUser);
     }
 
     public void deleteUser(UUID id) {
-        if (userRepository.findById(id).isEmpty()) {
-            throw new ResourceNotFoundException("User not found with id: " + id);
-        }
+        SecurityUtils.checkSelfOrAdmin(id);
+        userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+
         userRepository.deleteById(id);
     }
 }

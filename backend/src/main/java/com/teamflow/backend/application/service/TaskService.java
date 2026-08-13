@@ -4,12 +4,16 @@ import com.teamflow.backend.api.dto.TaskCreateRequest;
 import com.teamflow.backend.api.dto.TaskResponse;
 import com.teamflow.backend.api.dto.TaskUpdateRequest;
 import com.teamflow.backend.common.exception.ResourceNotFoundException;
+import com.teamflow.backend.common.security.SecurityUtils;
 import com.teamflow.backend.domain.model.Sprint;
 import com.teamflow.backend.domain.model.Task;
+import com.teamflow.backend.domain.model.TaskPriority;
+import com.teamflow.backend.domain.model.TaskStatus;
 import com.teamflow.backend.repository.ProjectRepository;
 import com.teamflow.backend.repository.SprintRepository;
 import com.teamflow.backend.repository.TaskRepository;
 import com.teamflow.backend.repository.UserRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -36,24 +40,15 @@ public class TaskService {
     }
 
     public TaskResponse createTask(TaskCreateRequest request) {
-        if (projectRepository.findById(request.projectId()).isEmpty()) {
-            throw new ResourceNotFoundException("Project not found with id: " + request.projectId());
-        }
+        projectRepository.findById(request.projectId())
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + request.projectId()));
 
-        if (request.sprintId() != null) {
-            Sprint sprint = sprintRepository.findById(request.sprintId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Sprint not found with id: " + request.sprintId()));
+        checkProjectMemberOrAdmin(request.projectId());
 
-            if (!sprint.projectId().equals(request.projectId())) {
-                throw new IllegalArgumentException("Sprint with id " + request.sprintId() + " does not belong to project " + request.projectId());
-            }
-        }
+        validateForeignKeys(request.projectId(), request.sprintId(), request.assignedUserId());
 
-        if (request.assignedUserId() != null) {
-            if (userRepository.findById(request.assignedUserId()).isEmpty()) {
-                throw new ResourceNotFoundException("User not found with id: " + request.assignedUserId());
-            }
-        }
+        TaskStatus status = request.status() != null ? request.status() : TaskStatus.TODO;
+        TaskPriority priority = request.priority() != null ? request.priority() : TaskPriority.MEDIUM;
 
         Task task = Task.create(
                 request.projectId(),
@@ -61,31 +56,27 @@ public class TaskService {
                 request.assignedUserId(),
                 request.title(),
                 request.description(),
-                request.status(),
-                request.priority()
+                status,
+                priority
         );
 
-        Task saved = taskRepository.save(task);
-        return TaskResponse.fromDomain(saved);
+        Task savedTask = taskRepository.save(task);
+        return TaskResponse.fromDomain(savedTask);
     }
 
     public TaskResponse getTaskById(UUID id) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + id));
+
+        checkProjectMemberOrAdmin(task.projectId());
         return TaskResponse.fromDomain(task);
     }
 
-    public List<TaskResponse> getAllTasks() {
-        return taskRepository.findAll()
-                .stream()
-                .map(TaskResponse::fromDomain)
-                .toList();
-    }
-
     public List<TaskResponse> getTasksByProjectId(UUID projectId) {
-        if (projectRepository.findById(projectId).isEmpty()) {
-            throw new ResourceNotFoundException("Project not found with id: " + projectId);
-        }
+        projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
+
+        checkProjectMemberOrAdmin(projectId);
 
         return taskRepository.findByProjectId(projectId)
                 .stream()
@@ -94,11 +85,22 @@ public class TaskService {
     }
 
     public List<TaskResponse> getTasksBySprintId(UUID sprintId) {
-        if (sprintRepository.findById(sprintId).isEmpty()) {
-            throw new ResourceNotFoundException("Sprint not found with id: " + sprintId);
-        }
+        Sprint sprint = sprintRepository.findById(sprintId)
+                .orElseThrow(() -> new ResourceNotFoundException("Sprint not found with id: " + sprintId));
+
+        checkProjectMemberOrAdmin(sprint.projectId());
 
         return taskRepository.findBySprintId(sprintId)
+                .stream()
+                .map(TaskResponse::fromDomain)
+                .toList();
+    }
+
+    public List<TaskResponse> getAllTasks() {
+        if (!SecurityUtils.isAdmin()) {
+            throw new AccessDeniedException("Access denied");
+        }
+        return taskRepository.findAll()
                 .stream()
                 .map(TaskResponse::fromDomain)
                 .toList();
@@ -108,41 +110,60 @@ public class TaskService {
         Task existingTask = taskRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + id));
 
-        if (request.sprintId() != null) {
-            Sprint sprint = sprintRepository.findById(request.sprintId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Sprint not found with id: " + request.sprintId()));
+        checkProjectMemberOrAdmin(existingTask.projectId());
 
-            if (!sprint.projectId().equals(existingTask.projectId())) {
-                throw new IllegalArgumentException("Sprint with id " + request.sprintId() + " does not belong to project " + existingTask.projectId());
-            }
-        }
+        validateForeignKeys(existingTask.projectId(), request.sprintId(), request.assignedUserId());
 
-        if (request.assignedUserId() != null) {
-            if (userRepository.findById(request.assignedUserId()).isEmpty()) {
-                throw new ResourceNotFoundException("User not found with id: " + request.assignedUserId());
-            }
-        }
+        TaskStatus status = request.status() != null ? request.status() : existingTask.status();
+        TaskPriority priority = request.priority() != null ? request.priority() : existingTask.priority();
 
-        Task updatedTask = new Task(
+        Task taskToSave = new Task(
                 existingTask.id(),
                 existingTask.projectId(),
                 request.sprintId(),
                 request.assignedUserId(),
                 request.title(),
                 request.description(),
-                request.status(),
-                request.priority(),
+                status,
+                priority,
                 existingTask.createdAt()
         );
 
-        Task saved = taskRepository.save(updatedTask);
-        return TaskResponse.fromDomain(saved);
+        Task updatedTask = taskRepository.save(taskToSave);
+        return TaskResponse.fromDomain(updatedTask);
     }
 
     public void deleteTask(UUID id) {
-        if (taskRepository.findById(id).isEmpty()) {
-            throw new ResourceNotFoundException("Task not found with id: " + id);
-        }
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + id));
+
+        checkProjectMemberOrAdmin(task.projectId());
         taskRepository.deleteById(id);
+    }
+
+    private void validateForeignKeys(UUID projectId, UUID sprintId, UUID assignedUserId) {
+        if (sprintId != null) {
+            Sprint sprint = sprintRepository.findById(sprintId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Sprint not found with id: " + sprintId));
+
+            if (!sprint.projectId().equals(projectId)) {
+                throw new IllegalArgumentException("Sprint does not belong to project with id: " + projectId);
+            }
+        }
+
+        if (assignedUserId != null) {
+            userRepository.findById(assignedUserId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Assigned user not found with id: " + assignedUserId));
+        }
+    }
+
+    private void checkProjectMemberOrAdmin(UUID projectId) {
+        if (SecurityUtils.isAdmin()) {
+            return;
+        }
+        UUID userId = SecurityUtils.getCurrentUserId();
+        if (!projectRepository.isMember(projectId, userId)) {
+            throw new AccessDeniedException("Access denied");
+        }
     }
 }

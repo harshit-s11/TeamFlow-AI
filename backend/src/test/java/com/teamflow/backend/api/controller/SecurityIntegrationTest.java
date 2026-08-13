@@ -1,6 +1,7 @@
 package com.teamflow.backend.api.controller;
 
 import com.teamflow.backend.application.security.JwtService;
+import com.teamflow.backend.domain.model.User;
 import com.teamflow.backend.domain.model.UserAccount;
 import com.teamflow.backend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,14 +71,15 @@ class SecurityIntegrationTest {
     }
 
     @Test
-    void protectedEndpoint_withValidToken_returnsOk200() throws Exception {
+    void protectedEndpoint_withValidUserToken_returnsOk200ForSelf() throws Exception {
         UUID userId = UUID.randomUUID();
         UserAccount account = new UserAccount(userId, "Alice", "alice@teamflow.com", "hash", "USER", Instant.now());
         String token = jwtService.generateToken(account);
 
         given(userRepository.findAccountByEmail("alice@teamflow.com")).willReturn(Optional.of(account));
+        given(userRepository.findById(userId)).willReturn(Optional.of(new User(userId, "Alice", "alice@teamflow.com", Instant.now())));
 
-        mockMvc.perform(get("/api/v1/users")
+        mockMvc.perform(get("/api/v1/users/" + userId)
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
     }

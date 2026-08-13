@@ -6,11 +6,14 @@ import com.teamflow.backend.api.dto.ProjectUpdateRequest;
 import com.teamflow.backend.api.dto.UserResponse;
 import com.teamflow.backend.common.exception.DuplicateResourceException;
 import com.teamflow.backend.common.exception.ResourceNotFoundException;
+import com.teamflow.backend.common.security.SecurityUtils;
 import com.teamflow.backend.domain.model.Project;
 import com.teamflow.backend.repository.ProjectRepository;
 import com.teamflow.backend.repository.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -26,20 +29,34 @@ public class ProjectService {
         this.userRepository = userRepository;
     }
 
+    @Transactional
     public ProjectResponse createProject(ProjectCreateRequest request) {
+        UUID creatorId = SecurityUtils.getCurrentUserId();
         Project project = Project.create(request.name(), request.description());
-        Project saved = projectRepository.save(project);
-        return ProjectResponse.fromDomain(saved);
+        Project savedProject = projectRepository.save(project);
+
+        projectRepository.addMember(savedProject.id(), creatorId);
+        return ProjectResponse.fromDomain(savedProject);
     }
 
     public ProjectResponse getProjectById(UUID id) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + id));
+
+        checkProjectMemberOrAdmin(id);
         return ProjectResponse.fromDomain(project);
     }
 
     public List<ProjectResponse> getAllProjects() {
-        return projectRepository.findAll()
+        if (SecurityUtils.isAdmin()) {
+            return projectRepository.findAll()
+                    .stream()
+                    .map(ProjectResponse::fromDomain)
+                    .toList();
+        }
+
+        UUID userId = SecurityUtils.getCurrentUserId();
+        return projectRepository.findByMemberId(userId)
                 .stream()
                 .map(ProjectResponse::fromDomain)
                 .toList();
@@ -49,54 +66,85 @@ public class ProjectService {
         Project existingProject = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + id));
 
-        Project updatedProject = new Project(existingProject.id(), request.name(), request.description(), existingProject.createdAt());
-        Project saved = projectRepository.save(updatedProject);
-        return ProjectResponse.fromDomain(saved);
+        checkProjectMemberOrAdmin(id);
+
+        Project projectToSave = new Project(existingProject.id(), request.name(), request.description(), existingProject.createdAt());
+        Project updatedProject = projectRepository.save(projectToSave);
+        return ProjectResponse.fromDomain(updatedProject);
     }
 
     public void deleteProject(UUID id) {
-        if (projectRepository.findById(id).isEmpty()) {
-            throw new ResourceNotFoundException("Project not found with id: " + id);
-        }
+        projectRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + id));
+
+        checkProjectMemberOrAdmin(id);
+
         projectRepository.deleteById(id);
     }
 
-    public void addMember(UUID projectId, UUID userId) {
-        if (projectRepository.findById(projectId).isEmpty()) {
-            throw new ResourceNotFoundException("Project not found with id: " + projectId);
-        }
-        if (userRepository.findById(userId).isEmpty()) {
-            throw new ResourceNotFoundException("User not found with id: " + userId);
-        }
-
-        try {
-            projectRepository.addMember(projectId, userId);
-        } catch (DataIntegrityViolationException e) {
-            throw new DuplicateResourceException("User with id " + userId + " is already a member of project " + projectId);
-        }
-    }
-
-    public void removeMember(UUID projectId, UUID userId) {
-        if (projectRepository.findById(projectId).isEmpty()) {
-            throw new ResourceNotFoundException("Project not found with id: " + projectId);
-        }
-        if (userRepository.findById(userId).isEmpty()) {
-            throw new ResourceNotFoundException("User not found with id: " + userId);
-        }
-
-        boolean removed = projectRepository.removeMember(projectId, userId);
-        if (!removed) {
-            throw new ResourceNotFoundException("User with id " + userId + " is not a member of project " + projectId);
-        }
-    }
-
     public List<UserResponse> getProjectMembers(UUID projectId) {
-        if (projectRepository.findById(projectId).isEmpty()) {
-            throw new ResourceNotFoundException("Project not found with id: " + projectId);
-        }
+        projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
+
+        checkProjectMemberOrAdmin(projectId);
+
         return projectRepository.findMembers(projectId)
                 .stream()
                 .map(UserResponse::fromDomain)
                 .toList();
+    }
+
+    public UserResponse addMember(UUID projectId, UUID userId) {
+        return addProjectMember(projectId, userId);
+    }
+
+    public UserResponse addProjectMember(UUID projectId, UUID userId) {
+        projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
+
+        userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        checkProjectMemberOrAdmin(projectId);
+
+        try {
+            projectRepository.addMember(projectId, userId);
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicateResourceException("User is already a member of this project");
+        }
+
+        return userRepository.findById(userId)
+                .map(UserResponse::fromDomain)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+    }
+
+    public void removeMember(UUID projectId, UUID userId) {
+        removeProjectMember(projectId, userId);
+    }
+
+    public void removeProjectMember(UUID projectId, UUID userId) {
+        projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found with id: " + projectId));
+
+        userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        checkProjectMemberOrAdmin(projectId);
+
+        if (!projectRepository.isMember(projectId, userId)) {
+            throw new ResourceNotFoundException("User is not a member of project with id: " + projectId);
+        }
+
+        projectRepository.removeMember(projectId, userId);
+    }
+
+    private void checkProjectMemberOrAdmin(UUID projectId) {
+        if (SecurityUtils.isAdmin()) {
+            return;
+        }
+        UUID userId = SecurityUtils.getCurrentUserId();
+        if (!projectRepository.isMember(projectId, userId)) {
+            throw new AccessDeniedException("Access denied");
+        }
     }
 }
