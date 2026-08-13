@@ -26,6 +26,12 @@ export const Navbar: React.FC = () => {
             <Link to="/" className="nav-link">
               Dashboard
             </Link>
+            <Link to="/teams" className="nav-link">
+              Teams
+            </Link>
+            <Link to="/projects" className="nav-link">
+              Projects
+            </Link>
 
             <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
               {user?.name} ({user?.role})
