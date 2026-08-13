@@ -1,6 +1,7 @@
 package com.teamflow.backend.repository;
 
 import com.teamflow.backend.domain.model.User;
+import com.teamflow.backend.domain.model.UserAccount;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -50,5 +51,27 @@ class UserRepositoryTest {
 
         List<User> users = userRepository.findAll();
         assertThat(users).hasSize(2);
+    }
+
+    @Test
+    void findAccountByEmail_whenUserExists_returnsUserAccount() {
+        User user = User.create("Carol", "carol@teamflow.com");
+        User saved = userRepository.save(user);
+
+        Optional<UserAccount> accountOptional = userRepository.findAccountByEmail(saved.email());
+
+        assertThat(accountOptional).isPresent();
+        UserAccount account = accountOptional.get();
+        assertThat(account.id()).isEqualTo(saved.id());
+        assertThat(account.email()).isEqualTo("carol@teamflow.com");
+        assertThat(account.role()).isEqualTo("USER");
+        assertThat(account.passwordHash()).isNull();
+    }
+
+    @Test
+    void findAccountByEmail_whenUserDoesNotExist_returnsEmptyOptional() {
+        Optional<UserAccount> accountOptional = userRepository.findAccountByEmail("nonexistent@teamflow.com");
+
+        assertThat(accountOptional).isEmpty();
     }
 }

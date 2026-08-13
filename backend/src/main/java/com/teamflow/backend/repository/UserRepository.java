@@ -1,6 +1,7 @@
 package com.teamflow.backend.repository;
 
 import com.teamflow.backend.domain.model.User;
+import com.teamflow.backend.domain.model.UserAccount;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -24,6 +25,15 @@ public class UserRepository {
             rs.getObject("id", UUID.class),
             rs.getString("name"),
             rs.getString("email"),
+            rs.getTimestamp("created_at").toInstant()
+    );
+
+    private final RowMapper<UserAccount> userAccountRowMapper = (rs, rowNum) -> new UserAccount(
+            rs.getObject("id", UUID.class),
+            rs.getString("name"),
+            rs.getString("email"),
+            rs.getString("password_hash"),
+            rs.getString("role"),
             rs.getTimestamp("created_at").toInstant()
     );
 
@@ -60,6 +70,16 @@ public class UserRepository {
         try {
             User user = jdbcTemplate.queryForObject(sql, userRowMapper, email);
             return Optional.ofNullable(user);
+        } catch (EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<UserAccount> findAccountByEmail(String email) {
+        String sql = "SELECT id, name, email, password_hash, role, created_at FROM users WHERE email = ?";
+        try {
+            UserAccount userAccount = jdbcTemplate.queryForObject(sql, userAccountRowMapper, email);
+            return Optional.ofNullable(userAccount);
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();
         }
