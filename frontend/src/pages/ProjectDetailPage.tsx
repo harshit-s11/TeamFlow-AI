@@ -103,9 +103,14 @@ export const ProjectDetailPage: React.FC = () => {
               {project?.description || 'No description provided.'}
             </p>
           </div>
-          <button className="btn btn-danger" onClick={() => setIsDeleteProjectOpen(true)}>
-            Delete Project
-          </button>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <Link to={`/projects/${id}/kanban`} className="btn btn-primary">
+              Open Kanban Board →
+            </Link>
+            <button className="btn btn-danger" onClick={() => setIsDeleteProjectOpen(true)}>
+              Delete Project
+            </button>
+          </div>
         </div>
       </div>
 

@@ -74,17 +74,28 @@ Completed modules:
   - Route & Navbar integration for Teams and Projects
   - Automated Vitest service unit tests and live browser verification
 
+Planned modules:
+
+- [ ] **S2-3 — Sprint Planning & Task Kanban UI** (*PLANNED / NEXT*)
+  - Sprint API service module (`sprintApi.ts`) & Task API service module (`taskApi.ts`)
+  - Sprint and Task TypeScript DTO request/response models
+  - Sprint list & creation views (`/sprints`, `/projects/:id/sprints`)
+  - Sprint detail view (`/sprints/:id`) & sprint-scoped tasks roster
+  - Task list & creation views (`/tasks`, `/projects/:id/tasks`)
+  - Task detail view (`/tasks/:id`) with edit/delete modals
+  - Interactive 4-column Task Kanban board (`/projects/:id/kanban`) for status columns (`TODO`, `IN_PROGRESS`, `IN_REVIEW`, `DONE`)
+  - Task status transition controls consuming existing `PUT /api/v1/tasks/{id}` endpoint
+  - Route & Navbar integration for Sprints, Tasks, and Project Kanban
+  - Vitest unit tests for `sprintApi.ts`, `taskApi.ts`, and Kanban components
+
 ---
 
 ## Future Phase Planning
-
-Post-S2-2 milestones are not yet formally specified in the project roadmap.
 
 ### Potential Future Directions (PROPOSED / UNCOMMITTED)
 
 The following areas represent candidate directions for future project phases:
 
-- **Sprint & Task Kanban UI**: Interactive Sprint planning and Task Kanban boards with status columns (`TODO`, `IN_PROGRESS`, `IN_REVIEW`, `DONE`).
 - **Advanced Task Management**: Task status state machine transitions, priority escalation, activity audit logging.
 - **AI Integration Phase**: LLM-powered sprint velocity forecasting, task breakdown generation, and automated standup summaries.
 - **DevOps & Containerization**: Dockerization of backend, frontend, and PostgreSQL with Docker Compose.

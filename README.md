@@ -131,14 +131,14 @@ Completed Milestones:
 - ✅ **S2-1** — React Frontend Foundation & Authentication Flow (`3bbd261`)
 - ✅ **S2-2** — Team & Project Management UI (`9112df0`)
 
-*Note: Post-S2-2 milestones are not yet formally specified in the project roadmap.*
+Planned Next Milestone:
+
+- 📋 **S2-3 — Sprint Planning & Task Kanban UI** (*PLANNED / NEXT*)
 
 ---
 
 ## Potential Future Work (Proposed / Uncommitted)
 
-- Sprint planning frontend UI.
-- Task Kanban board frontend UI.
 - Docker containerization & Docker Compose environment.
 - Advanced task status state machine transitions & audit logging.
 - AI assistant integration.

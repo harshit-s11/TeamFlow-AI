@@ -349,9 +349,30 @@ Build interactive frontend feature pages and components for Team Management and 
 
 ---
 
+## S2-3 — Sprint Planning & Task Kanban UI
+
+**Status**: 📋 *PLANNED / NEXT*
+
+**Objective**
+
+Expose the existing secured Sprint and Task backend APIs through an interactive React UI featuring Sprint planning views and a 4-column Task Kanban board (`TODO`, `IN_PROGRESS`, `IN_REVIEW`, `DONE`).
+
+**Planned Scope**
+
+- Sprint API service (`sprintApi.ts`) & Task API service (`taskApi.ts`).
+- Sprint & Task DTO request/response TypeScript models (`sprint.types.ts`, `task.types.ts`).
+- Sprint management views (`/sprints`, `/sprints/:id`, `/projects/:id/sprints`).
+- Task management views (`/tasks`, `/tasks/:id`, `/projects/:id/tasks`).
+- Interactive 4-column Task Kanban board (`/projects/:id/kanban`).
+- Status transition controls calling existing `PUT /api/v1/tasks/{id}` endpoint.
+- Route & Navbar integration for Sprints, Tasks, and Kanban views.
+- Vitest tests for API services and Kanban components.
+
+---
+
 ## Current Status
 
 - Phase S1 — Backend Foundation: **COMPLETE**
 - S2-1 — Frontend Foundation: **COMPLETE** (`3bbd261`)
 - S2-2 — Team & Project Management UI: **COMPLETE** (`9112df0`)
-- Post-S2-2 milestones: **Not yet formally specified**.
+- S2-3 — Sprint Planning & Task Kanban UI: **PLANNED / NEXT**

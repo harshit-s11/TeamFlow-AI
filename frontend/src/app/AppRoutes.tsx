@@ -12,6 +12,11 @@ import { TeamsPage } from '../pages/TeamsPage';
 import { TeamDetailPage } from '../pages/TeamDetailPage';
 import { ProjectsPage } from '../pages/ProjectsPage';
 import { ProjectDetailPage } from '../pages/ProjectDetailPage';
+import { SprintsPage } from '../pages/SprintsPage';
+import { SprintDetailPage } from '../pages/SprintDetailPage';
+import { TasksPage } from '../pages/TasksPage';
+import { TaskDetailPage } from '../pages/TaskDetailPage';
+import { ProjectKanbanPage } from '../pages/ProjectKanbanPage';
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -74,6 +79,46 @@ export const AppRoutes: React.FC = () => {
           element={
             <ProtectedRoute>
               <ProjectDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects/:id/kanban"
+          element={
+            <ProtectedRoute>
+              <ProjectKanbanPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sprints"
+          element={
+            <ProtectedRoute>
+              <SprintsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sprints/:id"
+          element={
+            <ProtectedRoute>
+              <SprintDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute>
+              <TasksPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tasks/:id"
+          element={
+            <ProtectedRoute>
+              <TaskDetailPage />
             </ProtectedRoute>
           }
         />

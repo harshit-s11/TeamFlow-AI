@@ -25,6 +25,7 @@ S2-2 — Team & Project Management UI (Completed — Commit `9112df0`)
 | **S1-6 RBAC & Authorization** | **COMPLETE** | `USER`/`ADMIN` roles, membership checks, IDOR protection, 140/140 tests passing |
 | **S2-1 Frontend Foundation** | **COMPLETE** | React + Vite + TS, Axios Bearer interceptor, AuthContext, Route Guards, CORS (Commit `3bbd261`) |
 | **S2-2 Team & Project UI** | **COMPLETE** | Teams & Projects list/detail pages, member rosters, modals, 7/7 Vitest tests passing (Commit `9112df0`) |
+| **S2-3 Sprint & Kanban UI** | **PLANNED** | Sprint planning & 4-column Task Kanban board interface (Next Module) |
 
 ---
 
@@ -64,10 +65,10 @@ S2-2 — Team & Project Management UI (Completed — Commit `9112df0`)
 
 ## Next Phase
 
-Pending Specification (Post-S2-2 Planning)
+Phase S2 — Frontend & Feature Development
 
 ---
 
 ## Next Module
 
-To be determined upon project roadmap specification approval.
+S2-3 — Sprint Planning & Task Kanban UI (*PLANNED / NEXT*)
