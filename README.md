@@ -84,6 +84,9 @@ PostgreSQL (Database)
 | `/api/v1/tasks` | `GET`, `POST` | `ADMIN` (GET) / Project Member (POST) | List all tasks or create task |
 | `/api/v1/tasks/{id}` | `GET`, `PUT`, `DELETE` | Project Member or `ADMIN` | Task CRUD operations |
 | `/api/v1/tasks/{id}/activity` | `GET` | Project Member or `ADMIN` | List task activity audit logs |
+| `/api/v1/ai/tasks/{id}/breakdown` | `POST` | Project Member or `ADMIN` | Generate AI task subtask breakdown draft preview |
+| `/api/v1/ai/sprints/{id}/forecast` | `POST` | Project Member or `ADMIN` | Calculate sprint velocity & AI risk forecast |
+| `/api/v1/ai/projects/{id}/standup-summary` | `POST` | Project Member or `ADMIN` | Generate automated daily standup summary |
 | `/api/v1/projects/{id}/tasks` | `GET` | Project Member or `ADMIN` | List project-scoped tasks |
 | `/api/v1/sprints/{id}/tasks` | `GET` | Project Member or `ADMIN` | List sprint-scoped tasks |
 
@@ -98,7 +101,8 @@ PostgreSQL (Database)
 - **Creator Auto-Membership**: Creating a team or project automatically enrolls the creator into the membership table inside a single transaction.
 - **IDOR Protection**: Requests attempting to access resources belonging to another team/project without membership return `HTTP 403 Forbidden`.
 - **Server-Side Actor Extraction**: Audit events extract actor user identity exclusively from the authenticated JWT Security Context (`SecurityUtils.getCurrentUserId()`).
-- **Structured Error Responses**: `401 Unauthorized` for missing/invalid tokens; `403 Forbidden` for unauthorized resource access; `400 Bad Request` for invalid state machine transitions (`ApiErrorResponse`).
+- **Server-Side AI Integration**: Gemini API calls (`gemini-3.6-flash`) are managed strictly server-side behind Spring `GeminiApiClient` with API key isolation (`GEMINI_API_KEY`).
+- **Structured Error Responses**: `401 Unauthorized` for missing/invalid tokens; `403 Forbidden` for unauthorized resource access; `400 Bad Request` for invalid state machine transitions; `503 Service Unavailable` for missing AI key configuration (`ApiErrorResponse`).
 
 ---
 
@@ -113,7 +117,7 @@ PostgreSQL (Database)
 ## Testing & Verification
 
 - **Backend Test Suite**: 144 automated tests executed (100% pass rate).
-- **Frontend Test Suite**: 10 Vitest unit/integration tests executed (100% pass rate).
+- **Frontend Test Suite**: 13 Vitest unit/integration tests executed (100% pass rate).
 - **Production Build**: Clean TypeScript compilation (`tsc && vite build`) with zero errors.
 - **Container E2E Verification**: End-to-end REST API verification executed successfully against live containerized environment (`db`, `backend`, `frontend`).
 
@@ -121,7 +125,7 @@ PostgreSQL (Database)
 
 ## Current Status
 
-**Current Phase:** Phase S4 — Advanced Workflows & Audit Logging
+**Current Phase:** Phase S5 — AI Integration & Agile Intelligence
 
 Completed Milestones:
 
@@ -132,16 +136,18 @@ Completed Milestones:
 - ✅ **S2-3** — Sprint Planning & Task Kanban UI (`6c00705`)
 - ✅ **S3-1** — DevOps & Multi-Container Dockerization (`8606c79`)
 - ✅ **S4-1** — Advanced Task Workflow & Audit Logging (`442f90d`)
+- ✅ **S5-1** — AI Integration & Agile Intelligence
 
-*(Note: Post-S4-1 milestones remain un-specified in repository documentation).*
+*(Note: Post-S5-1 milestones remain un-specified in repository documentation).*
 
 ---
 
 ## Potential Future Work (Proposed / Uncommitted)
 
-- AI assistant integration.
+- CI/CD automated deployment pipeline integration.
 
 ---
+
 
 ## License
 

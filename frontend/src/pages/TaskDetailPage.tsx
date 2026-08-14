@@ -8,6 +8,7 @@ import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { TaskActivityTimeline } from '../components/tasks/TaskActivityTimeline';
+import { AiTaskBreakdownModal } from '../components/ai/AiTaskBreakdownModal';
 import { formatDate } from '../utils/formatters';
 
 export const TaskDetailPage: React.FC = () => {
@@ -22,15 +23,16 @@ export const TaskDetailPage: React.FC = () => {
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isAiBreakdownOpen, setIsAiBreakdownOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const loadTaskData = useCallback(async () => {
     if (!id) return;
     try {
       setLoading(true);
       setError(null);
-      const taskData = await taskApi.getTaskById(id);
-      setTask(taskData);
+      const data = await taskApi.getTaskById(id);
+      setTask(data);
     } catch (err) {
       setError(parseApiError(err));
     } finally {
@@ -59,13 +61,12 @@ export const TaskDetailPage: React.FC = () => {
   const handleDelete = async () => {
     if (!id) return;
     try {
-      setIsDeleting(true);
+      setDeleting(true);
       await taskApi.deleteTask(id);
       navigate('/tasks');
     } catch (err) {
-      alert(parseApiError(err));
-    } finally {
-      setIsDeleting(false);
+      setError(parseApiError(err));
+      setDeleting(false);
     }
   };
 
@@ -114,6 +115,9 @@ export const TaskDetailPage: React.FC = () => {
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button className="btn btn-primary" onClick={() => setIsAiBreakdownOpen(true)}>
+              ✨ AI Breakdown
+            </button>
             <button className="btn btn-secondary" onClick={() => setIsEditOpen(true)}>
               Edit Task
             </button>
@@ -128,25 +132,12 @@ export const TaskDetailPage: React.FC = () => {
         <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem' }}>Task Association Details</h2>
         <div className="grid-2">
           <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Project ID</span>
-            <div style={{ marginTop: '0.25rem', fontWeight: 600 }}>
-              <Link to={`/projects/${task?.projectId}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>
-                {task?.projectId}
-              </Link>
-            </div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Project ID</span>
+            <p style={{ margin: 0, fontWeight: 500 }}>{task?.projectId || 'Unassigned'}</p>
           </div>
-
           <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Sprint ID</span>
-            <div style={{ marginTop: '0.25rem', fontWeight: 600 }}>
-              {task?.sprintId ? (
-                <Link to={`/sprints/${task.sprintId}`} style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>
-                  {task.sprintId}
-                </Link>
-              ) : (
-                'Backlog (Unassigned)'
-              )}
-            </div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Sprint ID</span>
+            <p style={{ margin: 0, fontWeight: 500 }}>{task?.sprintId || 'Backlog (No Sprint)'}</p>
           </div>
         </div>
       </div>
@@ -154,6 +145,16 @@ export const TaskDetailPage: React.FC = () => {
       <div className="card">
         <TaskActivityTimeline activities={activities} loading={activityLoading} />
       </div>
+
+      {task && (
+        <AiTaskBreakdownModal
+          isOpen={isAiBreakdownOpen}
+          taskId={task.id}
+          projectId={task.projectId}
+          onClose={() => setIsAiBreakdownOpen(false)}
+          onSuccess={loadTaskData}
+        />
+      )}
 
       <EditTaskModal
         isOpen={isEditOpen}
@@ -167,10 +168,11 @@ export const TaskDetailPage: React.FC = () => {
         onClose={() => setIsDeleteOpen(false)}
         onConfirm={handleDelete}
         title="Delete Task"
-        message={`Are you sure you want to delete the task "${task?.title}"?`}
-        confirmText="Delete Task"
-        isLoading={isDeleting}
+        message={`Are you sure you want to delete task "${task?.title}"?`}
+        confirmText={deleting ? 'Deleting...' : 'Delete Task'}
+        isLoading={deleting}
       />
+
     </div>
   );
 };

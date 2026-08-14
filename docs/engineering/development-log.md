@@ -432,6 +432,33 @@ Extend TeamFlow AI's Task management domain with enforced task status transition
 
 ---
 
+## S5-1 — AI Integration & Agile Intelligence
+
+**Objective**
+
+Integrate Google Gemini AI (`gemini-3.6-flash`) into TeamFlow AI via server-side Spring `GeminiApiClient` and `AiService` abstraction to deliver AI Task Breakdown Generation, Sprint Velocity & Risk Forecasting, and Automated Daily Standup Summary reports.
+
+**Completed**
+
+- Configured `GeminiApiClient` server-side HTTP REST client targeting `gemini-3.6-flash` with `GEMINI_API_KEY` isolation, 12-second timeout, 1 retry for transient 503/429 failures, and graceful `HTTP 503 Service Unavailable` handling when unconfigured.
+- Implemented `AiService` supporting:
+  1. `POST /api/v1/ai/tasks/{id}/breakdown`: Generates subtask breakdown preview without persisting until explicit user approval.
+  2. `POST /api/v1/ai/sprints/{id}/forecast`: Combines deterministic historical sprint velocity metrics with AI qualitative risk assessment (`LOW`, `MEDIUM`, `HIGH`). Provides deterministic fallback for sprints with 0 completed historical sprints.
+  3. `POST /api/v1/ai/projects/{id}/standup-summary`: Aggregates activity logs and active/urgent tasks within customizable time window (default 24h) to generate daily standup Markdown reports.
+- Added `AiController` exposing REST endpoints protected by project membership authorization (`checkProjectMemberOrAdmin`). Non-members receive `HTTP 403 Forbidden`.
+- Created React SPA frontend components: `AiTaskBreakdownModal.tsx` (preview/edit/select/approve checklist), `SprintVelocityForecastWidget.tsx` (velocity metrics & risk badge), `StandupSummaryModal.tsx` (summary tabs & copyable Markdown text).
+- Added `AiServiceTest` unit test suite and `aiApi.test.ts` Vitest suite.
+- Injected `GEMINI_API_KEY`, `GEMINI_MODEL`, and `GEMINI_TIMEOUT_MS` into `docker-compose.yml` and `.env.example`.
+- Verified production Vite build (`npm run build`) and TypeScript compilation with 0 errors.
+- Rebuilt Docker Compose containers (`db`, `backend`, `frontend`) and executed live containerized E2E script (`test_s5_1_e2e.py`) with 100% success.
+
+**Challenges & Solutions**
+
+- *AI Key Isolation & Fallback*: Ensured `GEMINI_API_KEY` is kept strictly server-side and missing key returns `HTTP 503 Service Unavailable` rather than throwing uncaught exceptions or leaking secrets.
+- *Zero Sprint Baseline*: Implemented deterministic fallback logic for sprint velocity forecasting when 0 completed sprints exist to prevent division-by-zero or hallucinatory predictions.
+
+---
+
 ## Current Status
 
 - Phase S1 — Backend Foundation: **COMPLETE**
@@ -440,3 +467,4 @@ Extend TeamFlow AI's Task management domain with enforced task status transition
 - S2-3 — Sprint Planning & Task Kanban UI: **COMPLETE** (`6c00705`)
 - S3-1 — DevOps & Multi-Container Dockerization: **COMPLETE** (`8606c79`)
 - S4-1 — Advanced Task Workflow & Audit Logging: **COMPLETE** (`442f90d`)
+- S5-1 — AI Integration & Agile Intelligence: **COMPLETE**

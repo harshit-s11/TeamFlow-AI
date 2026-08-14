@@ -7,6 +7,7 @@ import { UserResponse } from '../types/user.types';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { AddProjectMemberModal } from '../components/projects/AddProjectMemberModal';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
+import { StandupSummaryModal } from '../components/ai/StandupSummaryModal';
 import { formatDate } from '../utils/formatters';
 
 export const ProjectDetailPage: React.FC = () => {
@@ -19,6 +20,7 @@ export const ProjectDetailPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [isStandupOpen, setIsStandupOpen] = useState(false);
   const [userToRemove, setUserToRemove] = useState<UserResponse | null>(null);
   const [isDeleteProjectOpen, setIsDeleteProjectOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -104,6 +106,9 @@ export const ProjectDetailPage: React.FC = () => {
             </p>
           </div>
           <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button className="btn btn-secondary" onClick={() => setIsStandupOpen(true)}>
+              🤖 Standup Summary
+            </button>
             <Link to={`/projects/${id}/kanban`} className="btn btn-primary">
               Open Kanban Board →
             </Link>
@@ -113,6 +118,15 @@ export const ProjectDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {id && (
+        <StandupSummaryModal
+          isOpen={isStandupOpen}
+          projectId={id}
+          onClose={() => setIsStandupOpen(false)}
+        />
+      )}
+
 
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>

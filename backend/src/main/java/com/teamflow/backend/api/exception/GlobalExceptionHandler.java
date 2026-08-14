@@ -1,6 +1,8 @@
 package com.teamflow.backend.api.exception;
 
 import com.teamflow.backend.api.dto.ApiErrorResponse;
+import com.teamflow.backend.common.exception.AiGatewayTimeoutException;
+import com.teamflow.backend.common.exception.AiServiceUnavailableException;
 import com.teamflow.backend.common.exception.DuplicateResourceException;
 import com.teamflow.backend.common.exception.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,6 +20,35 @@ import java.util.List;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(AiServiceUnavailableException.class)
+    public ResponseEntity<ApiErrorResponse> handleAiServiceUnavailableException(
+            AiServiceUnavailableException ex,
+            HttpServletRequest request
+    ) {
+        ApiErrorResponse response = ApiErrorResponse.of(
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                HttpStatus.SERVICE_UNAVAILABLE.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(response);
+    }
+
+    @ExceptionHandler(AiGatewayTimeoutException.class)
+    public ResponseEntity<ApiErrorResponse> handleAiGatewayTimeoutException(
+            AiGatewayTimeoutException ex,
+            HttpServletRequest request
+    ) {
+        ApiErrorResponse response = ApiErrorResponse.of(
+                HttpStatus.GATEWAY_TIMEOUT.value(),
+                HttpStatus.GATEWAY_TIMEOUT.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).body(response);
+    }
+
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleResourceNotFoundException(

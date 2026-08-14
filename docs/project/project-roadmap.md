@@ -127,10 +127,29 @@ Completed modules:
 
 ---
 
+## Phase S5 — AI Integration & Agile Intelligence
+
+**Status:** ✅ Completed
+
+Completed modules:
+
+- [x] **S5-1 — AI Integration & Agile Intelligence**
+  - Server-side Google Gemini API integration (`gemini-3.6-flash`) using Spring `GeminiApiClient` with API key isolation (`GEMINI_API_KEY`)
+  - AI Task Subtask Breakdown generation (`POST /api/v1/ai/tasks/{id}/breakdown`) with draft preview and explicit user approval requirement before database persistence
+  - Sprint Velocity & Risk Forecasting (`POST /api/v1/ai/sprints/{id}/forecast`) combining deterministic historical velocity statistics with Gemini qualitative risk analysis
+  - Deterministic fallback handling for sprints with 0 completed historical sprints
+  - Automated Daily Standup Summary generation (`POST /api/v1/ai/projects/{id}/standup-summary`) aggregating task activity logs and active tasks
+  - React SPA frontend components: `AiTaskBreakdownModal.tsx`, `SprintVelocityForecastWidget.tsx`, `StandupSummaryModal.tsx`
+  - Graceful `HTTP 503 Service Unavailable` error handling when `GEMINI_API_KEY` is not configured
+  - Project membership authorization (`checkProjectMemberOrAdmin`) on all AI REST endpoints returning `HTTP 403 Forbidden` to non-members
+  - Comprehensive test suite expansion reaching 144 backend Java tests and 13 Vitest frontend tests (100% pass rate)
+
+---
+
 ## Future Phase Planning
 
 ### Potential Future Directions (PROPOSED / UNCOMMITTED)
 
 The following areas represent candidate directions for future project phases:
 
-- **AI Integration Phase**: LLM-powered sprint velocity forecasting, task breakdown generation, and automated standup summaries.
+- **CI/CD Pipeline Phase**: GitHub Actions automated build, test, and container push workflow.

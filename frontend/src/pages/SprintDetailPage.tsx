@@ -7,6 +7,7 @@ import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { EditSprintModal } from '../components/sprints/EditSprintModal';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { TaskCard } from '../components/tasks/TaskCard';
+import { SprintVelocityForecastWidget } from '../components/ai/SprintVelocityForecastWidget';
 import { formatDate } from '../utils/formatters';
 
 export const SprintDetailPage: React.FC = () => {
@@ -105,7 +106,10 @@ export const SprintDetailPage: React.FC = () => {
         </div>
       </div>
 
+      {id && <SprintVelocityForecastWidget sprintId={id} />}
+
       <div className="card">
+
         <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1.5rem' }}>
           Sprint Tasks ({tasks.length})
         </h2>

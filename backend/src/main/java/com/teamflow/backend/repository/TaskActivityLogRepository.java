@@ -60,4 +60,14 @@ public class TaskActivityLogRepository {
             """;
         return jdbcTemplate.query(sql, rowMapper, taskId);
     }
+
+    public List<TaskActivityLog> findByProjectIdAndWindow(UUID projectId, java.time.Instant since) {
+        String sql = """
+            SELECT id, project_id, task_id, actor_user_id, event_type, field_changed, old_value, new_value, created_at
+            FROM task_activity_logs
+            WHERE project_id = ? AND created_at >= ?
+            ORDER BY created_at ASC
+            """;
+        return jdbcTemplate.query(sql, rowMapper, projectId, Timestamp.from(since));
+    }
 }
