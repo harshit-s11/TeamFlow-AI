@@ -1,6 +1,8 @@
 package com.teamflow.backend.api.controller;
 
 import com.teamflow.backend.application.security.JwtService;
+import com.teamflow.backend.domain.model.Project;
+import com.teamflow.backend.domain.model.Team;
 import com.teamflow.backend.domain.model.UserAccount;
 import com.teamflow.backend.repository.ProjectRepository;
 import com.teamflow.backend.repository.SprintRepository;
@@ -135,6 +137,7 @@ class AuthorizationIntegrationTest {
     @Test
     void idor_userB_accessingUserATeam_returnsForbidden403() throws Exception {
         UUID teamAId = UUID.randomUUID();
+        given(teamRepository.findById(teamAId)).willReturn(Optional.of(new Team(teamAId, "Team A", Instant.now())));
         given(teamRepository.isMember(teamAId, userBId)).willReturn(false);
 
         mockMvc.perform(get("/api/v1/teams/" + teamAId)
@@ -146,6 +149,7 @@ class AuthorizationIntegrationTest {
     @Test
     void idor_userB_accessingUserAProject_returnsForbidden403() throws Exception {
         UUID projectAId = UUID.randomUUID();
+        given(projectRepository.findById(projectAId)).willReturn(Optional.of(new Project(projectAId, "Project A", "Desc", Instant.now())));
         given(projectRepository.isMember(projectAId, userBId)).willReturn(false);
 
         mockMvc.perform(get("/api/v1/projects/" + projectAId)
@@ -157,6 +161,7 @@ class AuthorizationIntegrationTest {
     @Test
     void scopedRoute_userB_accessingProjectTasks_returnsForbidden403() throws Exception {
         UUID projectAId = UUID.randomUUID();
+        given(projectRepository.findById(projectAId)).willReturn(Optional.of(new Project(projectAId, "Project A", "Desc", Instant.now())));
         given(projectRepository.isMember(projectAId, userBId)).willReturn(false);
 
         mockMvc.perform(get("/api/v1/projects/" + projectAId + "/tasks")
