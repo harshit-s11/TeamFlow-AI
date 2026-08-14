@@ -39,7 +39,7 @@ The project serves as a portfolio application for Software Development Engineer 
 - **Engine**: PostgreSQL 16+
 
 ### Containerization & Deployment
-- **Containerization**: Docker / Docker Compose (*S3-1 PLANNED*)
+- **Containerization**: Multi-container Docker & Docker Compose orchestration (`postgres:16-alpine`, Java 21 Spring Boot backend, NGINX React SPA frontend) with container health checks and persistent PostgreSQL database volume storage (`8606c79`).
 
 ---
 
@@ -126,10 +126,9 @@ Completed Milestones:
 - ✅ **S2-1** — React Frontend Foundation & Authentication Flow (`3bbd261`)
 - ✅ **S2-2** — Team & Project Management UI (`9112df0`)
 - ✅ **S2-3** — Sprint Planning & Task Kanban UI (`6c00705`)
+- ✅ **S3-1** — DevOps & Multi-Container Dockerization (`8606c79`)
 
-Planned Next Milestone:
-
-- 📋 **S3-1 — DevOps & Multi-Container Dockerization** (*PLANNED / NEXT*)
+*(Note: Post-S3-1 milestones remain un-specified in repository documentation).*
 
 ---
 

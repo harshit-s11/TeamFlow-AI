@@ -373,20 +373,30 @@ Expose the existing secured Sprint and Task backend APIs through an interactive 
 
 ## S3-1 — DevOps & Multi-Container Dockerization
 
-**Status**: 📋 *PLANNED / NEXT*
+**Commit**: `8606c79 feat(devops): implement Docker Compose deployment environment`
 
 **Objective**
 
-Containerize PostgreSQL, Spring Boot backend, and React/Vite NGINX frontend into a multi-container Docker Compose environment.
+Orchestrate PostgreSQL 16+, Spring Boot 4.1.0 / Java 21 backend, and React 18 / Vite NGINX frontend into a reproducible, multi-container Docker Compose environment.
 
-**Planned Scope**
+**Completed**
 
-- PostgreSQL 16+ database container with volume persistence.
-- Multi-stage Spring Boot Java 21 backend `Dockerfile`.
-- Production NGINX frontend `Dockerfile`.
-- `docker-compose.yml` service orchestration, health checks, and network definitions.
-- Security environment variable injection (`TEAMFLOW_DB_USERNAME`, `TEAMFLOW_DB_PASSWORD`, `TEAMFLOW_JWT_SECRET`).
-- End-to-end containerized verification of Auth, Teams, Projects, Sprints, and Kanban workflows.
+- Created multi-stage Java 21 Spring Boot backend `Dockerfile` running under unprivileged non-root user `teamflow` (`backend/Dockerfile`, `backend/.dockerignore`).
+- Created multi-stage React 18 / Vite NGINX frontend `Dockerfile` with SPA fallback routing (`frontend/Dockerfile`, `frontend/nginx.conf`, `frontend/.dockerignore`).
+- Created `docker-compose.yml` orchestrating `db` (`postgres:16-alpine`), `backend`, and `frontend` on `teamflow-network` bridge network.
+- Configured PostgreSQL persistent named volume `teamflow_postgres_data` mapped to `/var/lib/postgresql/data`.
+- Configured explicit container health checks (`CMD-SHELL` `pg_isready` for DB, `curl` `/api/v1/health` for backend, `curl` port 80 check for frontend) with `service_healthy` startup ordering.
+- Updated Spring Boot CORS allowed origins in `SecurityConfig.java` to permit `http://localhost` and `http://localhost:80`.
+- Created `.env.example` security credential template and verified `.env` git exclusion.
+- Authored comprehensive deployment guide (`docs/deployment/docker-deployment-guide.md`).
+- Executed live end-to-end containerized verification covering User Registration, Login, Team Creation, Project Creation, Sprint Creation, Task Creation, and Kanban status transitions.
+- Verified PostgreSQL volume data persistence across full `docker compose down` and `docker compose up -d` container lifecycle.
+- Confirmed test regression: 140/140 Java tests passed, 9/9 Vitest frontend tests passed, TypeScript compilation & Vite build passed.
+
+**Challenges & Solutions**
+
+- *Docker Desktop WSL 2 Integration*: Required initializing Docker Engine daemon in WSL 2 environment (`wsl -d Ubuntu -u root service docker start`) to orchestrate container lifecycle.
+- *Container Health Check Alignment*: Added `curl` and explicit `HEALTHCHECK` instruction to `frontend/Dockerfile` and `docker-compose.yml` to satisfy `Up ... (healthy)` criteria across all three services (`db`, `backend`, `frontend`).
 
 ---
 
@@ -396,4 +406,4 @@ Containerize PostgreSQL, Spring Boot backend, and React/Vite NGINX frontend into
 - S2-1 — Frontend Foundation: **COMPLETE** (`3bbd261`)
 - S2-2 — Team & Project Management UI: **COMPLETE** (`9112df0`)
 - S2-3 — Sprint Planning & Task Kanban UI: **COMPLETE** (`6c00705`)
-- S3-1 — DevOps & Multi-Container Dockerization: **PLANNED / NEXT**
+- S3-1 — DevOps & Multi-Container Dockerization: **COMPLETE** (`8606c79`)
