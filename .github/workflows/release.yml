@@ -1,0 +1,59 @@
+name: Release Containers to GHCR
+
+on:
+  workflow_run:
+    workflows: ["TeamFlow AI CI Pipeline"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish-containers:
+    name: Build & Publish Docker Images to GHCR
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout Verified Source Commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up Docker Buildx
+        uses: actions/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: actions/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Lowercase Repository Owner Name
+        id: repo_owner
+        run: echo "owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
+      - name: Build & Push Backend Container Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ steps.repo_owner.outputs.owner }}/teamflow-ai-backend:${{ github.event.workflow_run.head_sha }}
+            ghcr.io/${{ steps.repo_owner.outputs.owner }}/teamflow-ai-backend:latest
+
+      - name: Build & Push Frontend Container Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          build-args: |
+            VITE_API_BASE_URL=http://localhost:8080
+          push: true
+          tags: |
+            ghcr.io/${{ steps.repo_owner.outputs.owner }}/teamflow-ai-frontend:${{ github.event.workflow_run.head_sha }}
+            ghcr.io/${{ steps.repo_owner.outputs.owner }}/teamflow-ai-frontend:latest

@@ -459,6 +459,33 @@ Integrate Google Gemini AI (`gemini-3.6-flash`) into TeamFlow AI via server-side
 
 ---
 
+## S6-1 — CI/CD & Automated Release Pipeline
+
+**Objective**
+
+Establish an automated, secure, and reproducible Continuous Integration and Continuous Release pipeline for TeamFlow AI using GitHub Actions and GitHub Container Registry (GHCR).
+
+**Completed**
+
+- Created GitHub Actions CI workflow (`.github/workflows/ci.yml`) triggering on Pull Requests to `main` and pushes to `main` with 3 parallel/sequential jobs:
+  1. `backend-test`: Java 21 (Temurin) setup with Gradle caching, running `./gradlew test --no-daemon` and `./gradlew bootJar -x test --no-daemon`.
+  2. `frontend-test-build`: Node 20 setup with npm caching, running `npm ci`, `npm test -- --run`, and `npm run build`.
+  3. `container-integration-test`: Docker Compose stack verification (`docker compose up -d --build`), waiting for container health check passing (`teamflow-db`, `teamflow-backend`), executing HTTP health checks (`http://localhost:8080/api/v1/health` and `http://localhost:80`), and cleaning up containers (`docker compose down -v`).
+- Created GitHub Actions Release workflow (`.github/workflows/release.yml`) triggering via `workflow_run` ONLY after successful CI completion on `main`:
+  1. Uses least-privilege token permissions (`contents: read`, `packages: write`) and authenticates to `ghcr.io` via standard `GITHUB_TOKEN`.
+  2. Builds and publishes multi-stage Docker images (`ghcr.io/<owner>/teamflow-ai-backend` and `ghcr.io/<owner>/teamflow-ai-frontend`).
+  3. Dual container image tagging: immutable commit SHA (`:${{ github.event.workflow_run.head_sha }}`) and floating release (`:latest`).
+- Maintained strict AI secret isolation: standard CI operates deterministically without live Gemini API calls (mocked unit tests in backend; unconfigured key defaults to expected `HTTP 503 Service Unavailable` behavior in Docker Compose smoke tests).
+- Created comprehensive engineering documentation: `docs/engineering/cicd-pipeline-guide.md`.
+- Verified local execution: `./gradlew test` (144/144 pass), `npm test` (13/13 pass), `npm run build` (0 errors), `docker compose config` (valid), live Docker Compose health check & HTTP smoke tests (100% pass), `git diff --check` (0 errors).
+
+**Challenges & Solutions**
+
+- *Release Pipeline Safety*: Configured `release.yml` to depend explicitly on `workflow_run` completion of `TeamFlow AI CI Pipeline` with `if: ${{ github.event.workflow_run.conclusion == 'success' }}`, guaranteeing that CI failure completely prevents container image publication.
+- *Least-Privilege Security*: Restricted CI workflow permissions to `contents: read` and Release workflow permissions to `contents: read`, `packages: write`, avoiding personal access tokens (PATs) or long-lived secrets.
+
+---
+
 ## Current Status
 
 - Phase S1 — Backend Foundation: **COMPLETE**
@@ -467,4 +494,5 @@ Integrate Google Gemini AI (`gemini-3.6-flash`) into TeamFlow AI via server-side
 - S2-3 — Sprint Planning & Task Kanban UI: **COMPLETE** (`6c00705`)
 - S3-1 — DevOps & Multi-Container Dockerization: **COMPLETE** (`8606c79`)
 - S4-1 — Advanced Task Workflow & Audit Logging: **COMPLETE** (`442f90d`)
-- S5-1 — AI Integration & Agile Intelligence: **COMPLETE**
+- S5-1 — AI Integration & Agile Intelligence: **COMPLETE** (`803696b`)
+- S6-1 — CI/CD & Automated Release Pipeline: **COMPLETE**

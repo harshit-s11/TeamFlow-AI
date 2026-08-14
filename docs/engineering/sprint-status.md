@@ -2,13 +2,13 @@
 
 ## Current Phase
 
-Phase S5 — AI Integration & Agile Intelligence (Completed)
+Phase S6 — CI/CD & Automated Release Pipeline (Completed)
 
 ---
 
 ## Current Module
 
-S5-1 — AI Integration & Agile Intelligence (Completed)
+S6-1 — CI/CD & Automated Release Pipeline (Completed)
 
 ---
 
@@ -28,7 +28,8 @@ S5-1 — AI Integration & Agile Intelligence (Completed)
 | **S2-3 Sprint & Kanban UI** | **COMPLETE** | Sprint planning & 4-column Task Kanban board interface, 9/9 Vitest tests passing (Commit `6c00705`) |
 | **S3-1 DevOps & Containerization** | **COMPLETE** | Multi-container Docker Compose setup for PostgreSQL, backend, and NGINX frontend (Commit `8606c79`) |
 | **S4-1 Workflow & Audit Logging** | **COMPLETE** | Task state machine, Flyway V3, transactional activity logging, URGENT priority, 144 backend & 10 Vitest tests passing (Commit `442f90d`) |
-| **S5-1 AI Integration** | **COMPLETE** | Gemini API task breakdown, sprint velocity forecast, standup summary, 144 backend & 13 Vitest tests passing |
+| **S5-1 AI Integration** | **COMPLETE** | Gemini API task breakdown, sprint velocity forecast, standup summary, 144 backend & 13 Vitest tests passing (Commit `803696b`) |
+| **S6-1 CI/CD & Automated Release** | **COMPLETE** | GitHub Actions workflows (`ci.yml`, `release.yml`), GHCR container registry publishing, commit SHA & latest tags |
 
 ---
 
@@ -81,7 +82,13 @@ S5-1 — AI Integration & Agile Intelligence (Completed)
 
 ## Completed S5 Modules
 
-- [x] S5-1 — AI Integration & Agile Intelligence
+- [x] S5-1 — AI Integration & Agile Intelligence (Commit `803696b`)
+
+---
+
+## Completed S6 Modules
+
+- [x] S6-1 — CI/CD & Automated Release Pipeline
 
 ---
 
@@ -93,4 +100,4 @@ Not explicitly documented
 
 ## Next Module
 
-Not explicitly documented (Post-S5-1 milestones remain un-specified in repository documentation)
+Not explicitly documented (Post-S6-1 milestones remain un-specified in repository documentation)

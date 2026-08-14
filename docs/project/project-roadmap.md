@@ -146,10 +146,26 @@ Completed modules:
 
 ---
 
+## Phase S6 — CI/CD & Automated Release Pipeline
+
+**Status:** ✅ Completed
+
+Completed modules:
+
+- [x] **S6-1 — CI/CD & Automated Release Pipeline**
+  - Created `.github/workflows/ci.yml` triggering on PRs and pushes to `main` to run Java 21 backend tests, Node 20 Vitest tests, Vite production build, and multi-container Docker Compose health validation
+  - Created `.github/workflows/release.yml` triggering on successful CI completion via `workflow_run` to build and publish backend/frontend Docker images to GitHub Container Registry (`ghcr.io`)
+  - Enforced least-privilege permissions (`contents: read`, `packages: write`) and GITHUB_TOKEN authentication
+  - Dual container image tagging: immutable full commit SHA (`:${{ github.event.workflow_run.head_sha }}`) and floating branch release (`:latest`)
+  - Isolated AI secrets; standard CI operates deterministically without live Gemini API calls
+  - Created comprehensive engineering documentation: `docs/engineering/cicd-pipeline-guide.md`
+
+---
+
 ## Future Phase Planning
 
 ### Potential Future Directions (PROPOSED / UNCOMMITTED)
 
 The following areas represent candidate directions for future project phases:
 
-- **CI/CD Pipeline Phase**: GitHub Actions automated build, test, and container push workflow.
+- **Cloud Deployment Phase**: Production Kubernetes (K8s) deployment, ingress TLS automation, and telemetry monitoring.

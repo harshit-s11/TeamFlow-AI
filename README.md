@@ -125,7 +125,7 @@ PostgreSQL (Database)
 
 ## Current Status
 
-**Current Phase:** Phase S5 — AI Integration & Agile Intelligence
+**Current Phase:** Phase S6 — CI/CD & Automated Release Pipeline
 
 Completed Milestones:
 
@@ -136,17 +136,25 @@ Completed Milestones:
 - ✅ **S2-3** — Sprint Planning & Task Kanban UI (`6c00705`)
 - ✅ **S3-1** — DevOps & Multi-Container Dockerization (`8606c79`)
 - ✅ **S4-1** — Advanced Task Workflow & Audit Logging (`442f90d`)
-- ✅ **S5-1** — AI Integration & Agile Intelligence
+- ✅ **S5-1** — AI Integration & Agile Intelligence (`803696b`)
+- ✅ **S6-1** — CI/CD & Automated Release Pipeline
 
-*(Note: Post-S5-1 milestones remain un-specified in repository documentation).*
+---
+
+## Continuous Integration & Automated Release (CI/CD)
+
+- **CI Workflow (`.github/workflows/ci.yml`)**: Executes on Pull Requests targeting `main` and pushes to `main`. Automatically runs Java 21 backend tests (`./gradlew test`), Node 20 frontend Vitest tests (`npm test`), Vite production builds (`npm run build`), and multi-container Docker Compose health checks (`docker compose up -d`).
+- **Release Workflow (`.github/workflows/release.yml`)**: Triggered automatically via `workflow_run` after CI passes on `main`. Builds and publishes tagged Docker images (`backend` and `frontend`) to GitHub Container Registry (`ghcr.io`) using full commit SHA and `latest` tags.
+- **Security & Secret Isolation**: Operates under least-privilege permissions (`contents: read`, `packages: write`). Secrets and API keys are isolated; Gemini AI integration defaults to graceful `HTTP 503` handling in unconfigured CI smoke environments.
 
 ---
 
 ## Potential Future Work (Proposed / Uncommitted)
 
-- CI/CD automated deployment pipeline integration.
+- Cloud Kubernetes (K8s) cluster deployment and production ingress routing.
 
 ---
+
 
 
 ## License

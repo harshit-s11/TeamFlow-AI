@@ -1,0 +1,111 @@
+name: TeamFlow AI CI Pipeline
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  backend-test:
+    name: Backend Java Tests & Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Make Gradle Wrapper Executable
+        run: chmod +x gradlew
+
+      - name: Execute Backend Tests
+        run: ./gradlew test --no-daemon
+
+      - name: Build Boot Jar
+        run: ./gradlew bootJar -x test --no-daemon
+
+      - name: Upload Test Report Artifact (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-test-report
+          path: backend/build/reports/tests/test/
+
+  frontend-test-build:
+    name: Frontend Vitest & Production Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Execute Vitest Suite
+        run: npm test -- --run
+
+      - name: Build Vite Production Bundle
+        run: npm run build
+
+  container-integration-test:
+    name: Multi-Container Integration & Health Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Prepare Environment File
+        run: cp .env.example .env
+
+      - name: Launch Docker Compose Services
+        run: docker compose up -d --build
+
+      - name: Verify Container Status & Health
+        run: |
+          echo "Waiting for services to report healthy..."
+          timeout 60s bash -c 'until [ $(docker inspect --format="{{json .State.Health.Status}}" teamflow-db 2>/dev/null) == "\"healthy\"" ]; do sleep 2; done'
+          timeout 60s bash -c 'until [ $(docker inspect --format="{{json .State.Health.Status}}" teamflow-backend 2>/dev/null) == "\"healthy\"" ]; do sleep 2; done'
+          docker compose ps
+
+      - name: Execute Backend Health HTTP Smoke Check
+        run: |
+          curl -f http://localhost:8080/api/v1/health || exit 1
+
+      - name: Execute Frontend NGINX HTTP Smoke Check
+        run: |
+          curl -f http://localhost:80 || exit 1
+
+      - name: Output Container Logs on Failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Clean Up Container Stack
+        if: always()
+        run: docker compose down -v
