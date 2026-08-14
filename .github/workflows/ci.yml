@@ -15,10 +15,6 @@ jobs:
   backend-test:
     name: Backend Java Tests & Build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -30,14 +26,32 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: Prepare Environment File
+        run: cp .env.example .env
+
+      - name: Start PostgreSQL Database Container
+        run: docker compose up -d db
+
+      - name: Wait for Database Container Health
+        run: |
+          echo "Waiting for PostgreSQL database container to report healthy..."
+          timeout 60s bash -c 'until [ $(docker inspect --format="{{json .State.Health.Status}}" teamflow-db 2>/dev/null) == "\"healthy\"" ]; do sleep 2; done'
+
       - name: Make Gradle Wrapper Executable
         run: chmod +x gradlew
+        working-directory: backend
 
       - name: Execute Backend Tests
         run: ./gradlew test --no-daemon
+        working-directory: backend
 
       - name: Build Boot Jar
         run: ./gradlew bootJar -x test --no-daemon
+        working-directory: backend
+
+      - name: Clean Up Database Container
+        if: always()
+        run: docker compose down -v
 
       - name: Upload Test Report Artifact (on failure)
         if: failure()
@@ -45,6 +59,7 @@ jobs:
         with:
           name: java-test-report
           path: backend/build/reports/tests/test/
+
 
   frontend-test-build:
     name: Frontend Vitest & Production Build
