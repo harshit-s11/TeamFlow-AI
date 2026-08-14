@@ -351,22 +351,42 @@ Build interactive frontend feature pages and components for Team Management and 
 
 ## S2-3 — Sprint Planning & Task Kanban UI
 
-**Status**: 📋 *PLANNED / NEXT*
+**Commit**: `6c00705 feat(frontend): implement sprint planning and task kanban UI`
 
 **Objective**
 
 Expose the existing secured Sprint and Task backend APIs through an interactive React UI featuring Sprint planning views and a 4-column Task Kanban board (`TODO`, `IN_PROGRESS`, `IN_REVIEW`, `DONE`).
 
+**Completed**
+
+- Created Sprint API service (`sprintApi.ts`) & Task API service (`taskApi.ts`).
+- Defined Sprint & Task request DTO TypeScript models (`sprint.types.ts`, `task.types.ts`).
+- Built Sprint views: `SprintsPage` (`/sprints`), `SprintDetailPage` (`/sprints/:id`), `SprintCard`, `CreateSprintModal`, and `EditSprintModal`.
+- Built Task views: `TasksPage` (`/tasks`), `TaskDetailPage` (`/tasks/:id`), `TaskCard`, `CreateTaskModal`, and `EditTaskModal`.
+- Built interactive 4-column Task Kanban board (`/projects/:id/kanban`) for status columns (`TODO`, `IN_PROGRESS`, `IN_REVIEW`, `DONE`).
+- Integrated status transition controls calling existing `PUT /api/v1/tasks/{id}` endpoint.
+- Integrated Sprints, Tasks, and Kanban routes into `AppRoutes.tsx` and `Navbar.tsx`.
+- Added unit tests (`sprintApi.test.ts`, `taskApi.test.ts`) reaching 9/9 passing Vitest tests (100% pass rate).
+- Verified TypeScript compilation (`tsc && vite build`) and production bundle output with zero errors.
+
+---
+
+## S3-1 — DevOps & Multi-Container Dockerization
+
+**Status**: 📋 *PLANNED / NEXT*
+
+**Objective**
+
+Containerize PostgreSQL, Spring Boot backend, and React/Vite NGINX frontend into a multi-container Docker Compose environment.
+
 **Planned Scope**
 
-- Sprint API service (`sprintApi.ts`) & Task API service (`taskApi.ts`).
-- Sprint & Task DTO request/response TypeScript models (`sprint.types.ts`, `task.types.ts`).
-- Sprint management views (`/sprints`, `/sprints/:id`, `/projects/:id/sprints`).
-- Task management views (`/tasks`, `/tasks/:id`, `/projects/:id/tasks`).
-- Interactive 4-column Task Kanban board (`/projects/:id/kanban`).
-- Status transition controls calling existing `PUT /api/v1/tasks/{id}` endpoint.
-- Route & Navbar integration for Sprints, Tasks, and Kanban views.
-- Vitest tests for API services and Kanban components.
+- PostgreSQL 16+ database container with volume persistence.
+- Multi-stage Spring Boot Java 21 backend `Dockerfile`.
+- Production NGINX frontend `Dockerfile`.
+- `docker-compose.yml` service orchestration, health checks, and network definitions.
+- Security environment variable injection (`TEAMFLOW_DB_USERNAME`, `TEAMFLOW_DB_PASSWORD`, `TEAMFLOW_JWT_SECRET`).
+- End-to-end containerized verification of Auth, Teams, Projects, Sprints, and Kanban workflows.
 
 ---
 
@@ -375,4 +395,5 @@ Expose the existing secured Sprint and Task backend APIs through an interactive 
 - Phase S1 — Backend Foundation: **COMPLETE**
 - S2-1 — Frontend Foundation: **COMPLETE** (`3bbd261`)
 - S2-2 — Team & Project Management UI: **COMPLETE** (`9112df0`)
-- S2-3 — Sprint Planning & Task Kanban UI: **PLANNED / NEXT**
+- S2-3 — Sprint Planning & Task Kanban UI: **COMPLETE** (`6c00705`)
+- S3-1 — DevOps & Multi-Container Dockerization: **PLANNED / NEXT**
