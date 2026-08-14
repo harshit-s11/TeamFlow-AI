@@ -18,3 +18,16 @@ export interface TaskUpdateRequest {
   status: TaskStatus;
   priority: TaskPriority;
 }
+
+export interface TaskActivityLogResponse {
+  id: string;
+  projectId: string;
+  taskId: string | null;
+  actorUserId: string;
+  actorName: string;
+  eventType: string;
+  fieldChanged: string | null;
+  oldValue: string | null;
+  newValue: string | null;
+  createdAt: string;
+}

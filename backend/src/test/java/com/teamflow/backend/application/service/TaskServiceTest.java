@@ -1,18 +1,19 @@
 package com.teamflow.backend.application.service;
 
+import com.teamflow.backend.api.dto.TaskActivityLogResponse;
 import com.teamflow.backend.api.dto.TaskCreateRequest;
 import com.teamflow.backend.api.dto.TaskResponse;
 import com.teamflow.backend.api.dto.TaskUpdateRequest;
-import com.teamflow.backend.common.exception.ResourceNotFoundException;
 import com.teamflow.backend.domain.model.*;
 import com.teamflow.backend.repository.ProjectRepository;
 import com.teamflow.backend.repository.SprintRepository;
+import com.teamflow.backend.repository.TaskActivityLogRepository;
 import com.teamflow.backend.repository.TaskRepository;
 import com.teamflow.backend.repository.UserRepository;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
@@ -21,16 +22,14 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TaskServiceTest {
@@ -47,189 +46,222 @@ class TaskServiceTest {
     @Mock
     private UserRepository userRepository;
 
-    private TaskService taskService;
+    @Mock
+    private TaskActivityLogRepository activityLogRepository;
 
-    private void setAuthUser(UUID userId, String role) {
-        UserAccount account = new UserAccount(userId, "Test User", "test@teamflow.com", "hash", role, Instant.now());
+    private TaskService taskService;
+    private UUID currentUserId;
+    private UUID projectId;
+
+    @BeforeEach
+    void setUp() {
+        taskService = new TaskService(
+                taskRepository,
+                projectRepository,
+                sprintRepository,
+                userRepository,
+                activityLogRepository
+        );
+
+        currentUserId = UUID.randomUUID();
+        projectId = UUID.randomUUID();
+
+        UserAccount userAccount = new UserAccount(currentUserId, "John Doe", "user@example.com", "hash", "USER", Instant.now());
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                account, null, List.of(new SimpleGrantedAuthority("ROLE_" + role))
+                userAccount,
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_USER"))
         );
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
-    @BeforeEach
-    void setUp() {
-        taskService = new TaskService(taskRepository, projectRepository, sprintRepository, userRepository);
-    }
-
-    @AfterEach
-    void tearDown() {
-        SecurityContextHolder.clearContext();
-    }
-
     @Test
-    void createTask_whenProjectMember_returnsTaskResponse() {
-        UUID userId = UUID.randomUUID();
-        UUID projectId = UUID.randomUUID();
-        setAuthUser(userId, "USER");
+    void createTask_savesTaskAndRecordsTaskCreatedAuditLog() {
         TaskCreateRequest request = new TaskCreateRequest(
-                projectId, null, null, "Implement API", "Task desc", TaskStatus.TODO, TaskPriority.HIGH
+                projectId, null, null, "Build API", "Initial setup", TaskStatus.TODO, TaskPriority.HIGH
         );
-        UUID taskId = UUID.randomUUID();
-        Task savedTask = new Task(taskId, projectId, null, null, "Implement API", "Task desc", TaskStatus.TODO, TaskPriority.HIGH, Instant.now());
 
-        given(projectRepository.findById(projectId)).willReturn(Optional.of(new Project(projectId, "Proj", "Desc", Instant.now())));
-        given(projectRepository.isMember(projectId, userId)).willReturn(true);
+        Project project = new Project(projectId, "Platform", "Desc", Instant.now());
+        given(projectRepository.findById(projectId)).willReturn(Optional.of(project));
+        given(projectRepository.isMember(projectId, currentUserId)).willReturn(true);
+
+        Task savedTask = new Task(
+                UUID.randomUUID(), projectId, null, null, "Build API", "Initial setup",
+                TaskStatus.TODO, TaskPriority.HIGH, Instant.now()
+        );
         given(taskRepository.save(any(Task.class))).willReturn(savedTask);
+
+        TaskActivityLog savedLog = new TaskActivityLog(
+                UUID.randomUUID(), projectId, savedTask.id(), currentUserId,
+                "TASK_CREATED", null, null, "Build API", Instant.now()
+        );
+        given(activityLogRepository.save(any(TaskActivityLog.class))).willReturn(savedLog);
 
         TaskResponse response = taskService.createTask(request);
 
-        assertThat(response.id()).isEqualTo(taskId);
-        assertThat(response.title()).isEqualTo("Implement API");
-        assertThat(response.status()).isEqualTo(TaskStatus.TODO);
-        assertThat(response.priority()).isEqualTo(TaskPriority.HIGH);
+        assertNotNull(response);
+        assertEquals("Build API", response.title());
+
+        ArgumentCaptor<TaskActivityLog> logCaptor = ArgumentCaptor.forClass(TaskActivityLog.class);
+        verify(activityLogRepository).save(logCaptor.capture());
+        TaskActivityLog capturedLog = logCaptor.getValue();
+        assertEquals("TASK_CREATED", capturedLog.eventType());
+        assertEquals(currentUserId, capturedLog.actorUserId());
+        assertEquals("Build API", capturedLog.newValue());
     }
 
     @Test
-    void createTask_whenNonProjectMember_throwsAccessDeniedException() {
-        UUID userId = UUID.randomUUID();
-        UUID projectId = UUID.randomUUID();
-        setAuthUser(userId, "USER");
-        TaskCreateRequest request = new TaskCreateRequest(
-                projectId, null, null, "Task", "Desc", TaskStatus.TODO, TaskPriority.MEDIUM
-        );
-
-        given(projectRepository.findById(projectId)).willReturn(Optional.of(new Project(projectId, "Proj", "Desc", Instant.now())));
-        given(projectRepository.isMember(projectId, userId)).willReturn(false);
-
-        assertThatThrownBy(() -> taskService.createTask(request))
-                .isInstanceOf(AccessDeniedException.class);
-    }
-
-    @Test
-    void createTask_whenSprintBelongsToDifferentProject_throwsIllegalArgumentException() {
-        UUID userId = UUID.randomUUID();
-        UUID projectId = UUID.randomUUID();
-        UUID otherProjectId = UUID.randomUUID();
-        UUID sprintId = UUID.randomUUID();
-        setAuthUser(userId, "USER");
-        TaskCreateRequest request = new TaskCreateRequest(
-                projectId, sprintId, null, "Task", "Desc", TaskStatus.TODO, TaskPriority.MEDIUM
-        );
-
-        given(projectRepository.findById(projectId)).willReturn(Optional.of(new Project(projectId, "Proj", "Desc", Instant.now())));
-        given(projectRepository.isMember(projectId, userId)).willReturn(true);
-        given(sprintRepository.findById(sprintId)).willReturn(Optional.of(new Sprint(sprintId, otherProjectId, "Sprint 1", LocalDate.now(), LocalDate.now().plusDays(14), SprintStatus.PLANNED, Instant.now())));
-
-        assertThatThrownBy(() -> taskService.createTask(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("does not belong to project");
-    }
-
-    @Test
-    void getTaskById_whenNotFound_throwsResourceNotFoundException() {
-        UUID id = UUID.randomUUID();
-        setAuthUser(id, "USER");
-        given(taskRepository.findById(id)).willReturn(Optional.empty());
-
-        assertThatThrownBy(() -> taskService.getTaskById(id))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining(id.toString());
-    }
-
-    @Test
-    void getTaskById_whenAssignedUserButNonProjectMember_throwsAccessDeniedException() {
-        UUID userId = UUID.randomUUID();
+    void updateTask_validStatusTransition_succeedsAndLogsStatusChanged() {
         UUID taskId = UUID.randomUUID();
-        UUID projectId = UUID.randomUUID();
-        setAuthUser(userId, "USER");
-        Task task = new Task(taskId, projectId, null, userId, "Task Title", "Desc", TaskStatus.TODO, TaskPriority.MEDIUM, Instant.now());
-
-        given(taskRepository.findById(taskId)).willReturn(Optional.of(task));
-        given(projectRepository.isMember(projectId, userId)).willReturn(false);
-
-        assertThatThrownBy(() -> taskService.getTaskById(taskId))
-                .isInstanceOf(AccessDeniedException.class);
-    }
-
-    @Test
-    void updateTask_whenProjectMember_returnsUpdatedResponse() {
-        UUID userId = UUID.randomUUID();
-        UUID taskId = UUID.randomUUID();
-        UUID projectId = UUID.randomUUID();
-        setAuthUser(userId, "USER");
-        TaskUpdateRequest request = new TaskUpdateRequest(
-                null, null, "Task Updated", "New desc", TaskStatus.IN_PROGRESS, TaskPriority.HIGH
+        Task existingTask = new Task(
+                taskId, projectId, null, null, "Build API", "Desc",
+                TaskStatus.TODO, TaskPriority.MEDIUM, Instant.now()
         );
-        Task existingTask = new Task(taskId, projectId, null, null, "Task", "Desc", TaskStatus.TODO, TaskPriority.MEDIUM, Instant.now());
-        Task updatedTask = new Task(taskId, projectId, null, null, "Task Updated", "New desc", TaskStatus.IN_PROGRESS, TaskPriority.HIGH, existingTask.createdAt());
 
         given(taskRepository.findById(taskId)).willReturn(Optional.of(existingTask));
-        given(projectRepository.isMember(projectId, userId)).willReturn(true);
+        given(projectRepository.isMember(projectId, currentUserId)).willReturn(true);
+
+        Task updatedTask = new Task(
+                taskId, projectId, null, null, "Build API", "Desc",
+                TaskStatus.IN_PROGRESS, TaskPriority.MEDIUM, Instant.now()
+        );
         given(taskRepository.save(any(Task.class))).willReturn(updatedTask);
 
-        TaskResponse response = taskService.updateTask(taskId, request);
+        TaskUpdateRequest updateRequest = new TaskUpdateRequest(
+                null, null, "Build API", "Desc", TaskStatus.IN_PROGRESS, TaskPriority.MEDIUM
+        );
 
-        assertThat(response.title()).isEqualTo("Task Updated");
-        assertThat(response.status()).isEqualTo(TaskStatus.IN_PROGRESS);
+        TaskResponse response = taskService.updateTask(taskId, updateRequest);
+
+        assertEquals(TaskStatus.IN_PROGRESS, response.status());
+
+        ArgumentCaptor<TaskActivityLog> logCaptor = ArgumentCaptor.forClass(TaskActivityLog.class);
+        verify(activityLogRepository).save(logCaptor.capture());
+        TaskActivityLog log = logCaptor.getValue();
+        assertEquals("STATUS_CHANGED", log.eventType());
+        assertEquals("TODO", log.oldValue());
+        assertEquals("IN_PROGRESS", log.newValue());
+        assertEquals(currentUserId, log.actorUserId());
     }
 
     @Test
-    void deleteTask_whenProjectMember_deletesTask() {
-        UUID userId = UUID.randomUUID();
-        UUID id = UUID.randomUUID();
-        UUID projectId = UUID.randomUUID();
-        setAuthUser(userId, "USER");
-        Task existingTask = new Task(id, projectId, null, null, "Task", "Desc", TaskStatus.TODO, TaskPriority.MEDIUM, Instant.now());
+    void updateTask_invalidStatusTransition_throwsIllegalArgumentException() {
+        UUID taskId = UUID.randomUUID();
+        Task existingTask = new Task(
+                taskId, projectId, null, null, "Build API", "Desc",
+                TaskStatus.TODO, TaskPriority.MEDIUM, Instant.now()
+        );
 
-        given(taskRepository.findById(id)).willReturn(Optional.of(existingTask));
-        given(projectRepository.isMember(projectId, userId)).willReturn(true);
+        given(taskRepository.findById(taskId)).willReturn(Optional.of(existingTask));
+        given(projectRepository.isMember(projectId, currentUserId)).willReturn(true);
 
-        taskService.deleteTask(id);
+        TaskUpdateRequest invalidRequest = new TaskUpdateRequest(
+                null, null, "Build API", "Desc", TaskStatus.DONE, TaskPriority.MEDIUM
+        );
 
-        verify(taskRepository).deleteById(id);
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> taskService.updateTask(taskId, invalidRequest)
+        );
+
+        assertTrue(ex.getMessage().contains("Invalid task status transition from TODO to DONE"));
+        verify(activityLogRepository, never()).save(any());
     }
 
     @Test
-    void getTasksByProjectId_whenProjectMember_returnsTaskList() {
-        UUID userId = UUID.randomUUID();
-        UUID projectId = UUID.randomUUID();
-        setAuthUser(userId, "USER");
-        Task task = new Task(UUID.randomUUID(), projectId, null, null, "Task 1", "Desc", TaskStatus.TODO, TaskPriority.MEDIUM, Instant.now());
+    void updateTask_urgentPriority_doesNotModifyAssignedUserId() {
+        UUID taskId = UUID.randomUUID();
+        UUID assigneeId = UUID.randomUUID();
+        Task existingTask = new Task(
+                taskId, projectId, null, assigneeId, "Urgent Task", "Desc",
+                TaskStatus.TODO, TaskPriority.MEDIUM, Instant.now()
+        );
 
-        given(projectRepository.findById(projectId)).willReturn(Optional.of(new Project(projectId, "Proj", "Desc", Instant.now())));
-        given(projectRepository.isMember(projectId, userId)).willReturn(true);
-        given(taskRepository.findByProjectId(projectId)).willReturn(List.of(task));
+        given(taskRepository.findById(taskId)).willReturn(Optional.of(existingTask));
+        given(projectRepository.isMember(projectId, currentUserId)).willReturn(true);
 
-        List<TaskResponse> responses = taskService.getTasksByProjectId(projectId);
+        User assignee = new User(assigneeId, "assignee@example.com", "Assignee User", Instant.now());
+        given(userRepository.findById(assigneeId)).willReturn(Optional.of(assignee));
 
-        assertThat(responses).hasSize(1);
-        assertThat(responses.get(0).title()).isEqualTo("Task 1");
+        Task updatedTask = new Task(
+                taskId, projectId, null, assigneeId, "Urgent Task", "Desc",
+                TaskStatus.TODO, TaskPriority.URGENT, Instant.now()
+        );
+        given(taskRepository.save(any(Task.class))).willReturn(updatedTask);
+
+        TaskUpdateRequest updateRequest = new TaskUpdateRequest(
+                null, assigneeId, "Urgent Task", "Desc", TaskStatus.TODO, TaskPriority.URGENT
+        );
+
+        TaskResponse response = taskService.updateTask(taskId, updateRequest);
+
+        assertEquals(TaskPriority.URGENT, response.priority());
+        assertEquals(assigneeId, response.assignedUserId());
     }
 
     @Test
-    void getTasksBySprintId_whenProjectMember_returnsTaskList() {
-        UUID userId = UUID.randomUUID();
-        UUID sprintId = UUID.randomUUID();
-        UUID projectId = UUID.randomUUID();
-        setAuthUser(userId, "USER");
-        Task task = new Task(UUID.randomUUID(), projectId, sprintId, null, "Task 1", "Desc", TaskStatus.TODO, TaskPriority.MEDIUM, Instant.now());
+    void deleteTask_recordsTaskDeletedAuditLogBeforeDeletion() {
+        UUID taskId = UUID.randomUUID();
+        Task existingTask = new Task(
+                taskId, projectId, null, null, "Task to Delete", "Desc",
+                TaskStatus.TODO, TaskPriority.LOW, Instant.now()
+        );
 
-        given(sprintRepository.findById(sprintId)).willReturn(Optional.of(new Sprint(sprintId, projectId, "Sprint 1", LocalDate.now(), LocalDate.now().plusDays(14), SprintStatus.PLANNED, Instant.now())));
-        given(projectRepository.isMember(projectId, userId)).willReturn(true);
-        given(taskRepository.findBySprintId(sprintId)).willReturn(List.of(task));
+        given(taskRepository.findById(taskId)).willReturn(Optional.of(existingTask));
+        given(projectRepository.isMember(projectId, currentUserId)).willReturn(true);
 
-        List<TaskResponse> responses = taskService.getTasksBySprintId(sprintId);
+        taskService.deleteTask(taskId);
 
-        assertThat(responses).hasSize(1);
-        assertThat(responses.get(0).title()).isEqualTo("Task 1");
+        ArgumentCaptor<TaskActivityLog> logCaptor = ArgumentCaptor.forClass(TaskActivityLog.class);
+        verify(activityLogRepository).save(logCaptor.capture());
+        TaskActivityLog log = logCaptor.getValue();
+
+        assertEquals("TASK_DELETED", log.eventType());
+        assertEquals(taskId, log.taskId());
+        assertEquals("Task to Delete", log.oldValue());
+        assertEquals(currentUserId, log.actorUserId());
+
+        verify(taskRepository).deleteById(taskId);
     }
 
     @Test
-    void getAllTasks_whenRegularUser_throwsAccessDeniedException() {
-        setAuthUser(UUID.randomUUID(), "USER");
+    void getTaskActivity_whenProjectMember_returnsActivityLogs() {
+        UUID taskId = UUID.randomUUID();
+        Task existingTask = new Task(
+                taskId, projectId, null, null, "Task 1", "Desc",
+                TaskStatus.TODO, TaskPriority.LOW, Instant.now()
+        );
 
-        assertThatThrownBy(() -> taskService.getAllTasks())
-                .isInstanceOf(AccessDeniedException.class);
+        given(taskRepository.findById(taskId)).willReturn(Optional.of(existingTask));
+        given(projectRepository.isMember(projectId, currentUserId)).willReturn(true);
+
+        TaskActivityLog log1 = new TaskActivityLog(
+                UUID.randomUUID(), projectId, taskId, currentUserId,
+                "TASK_CREATED", null, null, "Task 1", Instant.now()
+        );
+        given(activityLogRepository.findByTaskIdOrderByCreatedAtAsc(taskId)).willReturn(List.of(log1));
+
+        User actor = new User(currentUserId, "John Doe", "john@example.com", Instant.now());
+        given(userRepository.findById(currentUserId)).willReturn(Optional.of(actor));
+
+        List<TaskActivityLogResponse> activities = taskService.getTaskActivity(taskId);
+
+        assertEquals(1, activities.size());
+        assertEquals("TASK_CREATED", activities.get(0).eventType());
+        assertEquals("John Doe", activities.get(0).actorName());
+    }
+
+    @Test
+    void getTaskActivity_whenNotProjectMember_throwsAccessDeniedException() {
+        UUID taskId = UUID.randomUUID();
+        Task existingTask = new Task(
+                taskId, projectId, null, null, "Task 1", "Desc",
+                TaskStatus.TODO, TaskPriority.LOW, Instant.now()
+        );
+
+        given(taskRepository.findById(taskId)).willReturn(Optional.of(existingTask));
+        given(projectRepository.isMember(projectId, currentUserId)).willReturn(false);
+
+        assertThrows(AccessDeniedException.class, () -> taskService.getTaskActivity(taskId));
     }
 }

@@ -3,9 +3,11 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { taskApi } from '../api/taskApi';
 import { parseApiError } from '../api/apiClient';
 import { TaskResponse } from '../types/domain.types';
+import { TaskActivityLogResponse } from '../types/task.types';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { EditTaskModal } from '../components/tasks/EditTaskModal';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
+import { TaskActivityTimeline } from '../components/tasks/TaskActivityTimeline';
 import { formatDate } from '../utils/formatters';
 
 export const TaskDetailPage: React.FC = () => {
@@ -13,7 +15,9 @@ export const TaskDetailPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [task, setTask] = useState<TaskResponse | null>(null);
+  const [activities, setActivities] = useState<TaskActivityLogResponse[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activityLoading, setActivityLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -34,9 +38,23 @@ export const TaskDetailPage: React.FC = () => {
     }
   }, [id]);
 
+  const loadActivityData = useCallback(async () => {
+    if (!id) return;
+    try {
+      setActivityLoading(true);
+      const activityData = await taskApi.getTaskActivity(id);
+      setActivities(activityData);
+    } catch (err) {
+      console.error('Failed to load task activity', err);
+    } finally {
+      setActivityLoading(false);
+    }
+  }, [id]);
+
   useEffect(() => {
     loadTaskData();
-  }, [loadTaskData]);
+    loadActivityData();
+  }, [loadTaskData, loadActivityData]);
 
   const handleDelete = async () => {
     if (!id) return;
@@ -49,6 +67,11 @@ export const TaskDetailPage: React.FC = () => {
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handleTaskUpdated = (updated: TaskResponse) => {
+    setTask(updated);
+    loadActivityData();
   };
 
   if (loading) {
@@ -101,7 +124,7 @@ export const TaskDetailPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="card">
+      <div className="card" style={{ marginBottom: '2rem' }}>
         <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem' }}>Task Association Details</h2>
         <div className="grid-2">
           <div style={{ backgroundColor: 'var(--bg-secondary)', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
@@ -128,11 +151,15 @@ export const TaskDetailPage: React.FC = () => {
         </div>
       </div>
 
+      <div className="card">
+        <TaskActivityTimeline activities={activities} loading={activityLoading} />
+      </div>
+
       <EditTaskModal
         isOpen={isEditOpen}
         task={task}
         onClose={() => setIsEditOpen(false)}
-        onSuccess={(updated) => setTask(updated)}
+        onSuccess={handleTaskUpdated}
       />
 
       <ConfirmDialog

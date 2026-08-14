@@ -1,6 +1,6 @@
 import { apiClient } from './apiClient';
 import { TaskResponse } from '../types/domain.types';
-import { TaskCreateRequest, TaskUpdateRequest } from '../types/task.types';
+import { TaskCreateRequest, TaskUpdateRequest, TaskActivityLogResponse } from '../types/task.types';
 
 export const taskApi = {
   async getAllTasks(): Promise<TaskResponse[]> {
@@ -29,6 +29,11 @@ export const taskApi = {
 
   async getTasksByProjectId(projectId: string): Promise<TaskResponse[]> {
     const res = await apiClient.get<TaskResponse[]>(`/api/v1/projects/${projectId}/tasks`);
+    return res.data;
+  },
+
+  async getTaskActivity(taskId: string): Promise<TaskActivityLogResponse[]> {
+    const res = await apiClient.get<TaskActivityLogResponse[]>(`/api/v1/tasks/${taskId}/activity`);
     return res.data;
   },
 };

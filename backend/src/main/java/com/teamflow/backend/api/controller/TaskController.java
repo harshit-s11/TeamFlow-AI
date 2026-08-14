@@ -1,5 +1,6 @@
 package com.teamflow.backend.api.controller;
 
+import com.teamflow.backend.api.dto.TaskActivityLogResponse;
 import com.teamflow.backend.api.dto.TaskCreateRequest;
 import com.teamflow.backend.api.dto.TaskResponse;
 import com.teamflow.backend.api.dto.TaskUpdateRequest;
@@ -30,6 +31,11 @@ public class TaskController {
     @GetMapping("/{id}")
     public ResponseEntity<TaskResponse> getTaskById(@PathVariable UUID id) {
         return ResponseEntity.ok(taskService.getTaskById(id));
+    }
+
+    @GetMapping("/{id}/activity")
+    public ResponseEntity<List<TaskActivityLogResponse>> getTaskActivity(@PathVariable UUID id) {
+        return ResponseEntity.ok(taskService.getTaskActivity(id));
     }
 
     @PostMapping
