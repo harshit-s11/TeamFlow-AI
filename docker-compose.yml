@@ -1,0 +1,74 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: teamflow-db
+    environment:
+      POSTGRES_DB: teamflow_ai
+      POSTGRES_USER: ${TEAMFLOW_DB_USERNAME:-teamflow_user}
+      POSTGRES_PASSWORD: ${TEAMFLOW_DB_PASSWORD:-teamflow_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - teamflow-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d teamflow_ai"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: teamflow-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/teamflow_ai
+      SPRING_DATASOURCE_USERNAME: ${TEAMFLOW_DB_USERNAME:-teamflow_user}
+      SPRING_DATASOURCE_PASSWORD: ${TEAMFLOW_DB_PASSWORD:-teamflow_password}
+      TEAMFLOW_JWT_SECRET: ${TEAMFLOW_JWT_SECRET:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      TEAMFLOW_JWT_EXPIRATION: ${TEAMFLOW_JWT_EXPIRATION:-900000}
+    ports:
+      - "8080:8080"
+    networks:
+      - teamflow-network
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/v1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8080
+    container_name: teamflow-frontend
+    ports:
+      - "80:80"
+    networks:
+      - teamflow-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  postgres_data:
+    name: teamflow_postgres_data
+
+networks:
+  teamflow-network:
+    name: teamflow-network
+    driver: bridge

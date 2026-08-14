@@ -1,0 +1,9 @@
+.gradle
+build
+.idea
+*.iml
+.git
+logs
+*.log
+.DS_Store
+Thumbs.db
