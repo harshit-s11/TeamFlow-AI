@@ -400,6 +400,38 @@ Orchestrate PostgreSQL 16+, Spring Boot 4.1.0 / Java 21 backend, and React 18 / 
 
 ---
 
+## S4-1 — Advanced Task Workflow & Audit Logging
+
+**Commit**: `442f90d feat(tasks): implement advanced task workflow state machine and audit logging`
+
+**Objective**
+
+Extend TeamFlow AI's Task management domain with enforced task status transition state machine rules, explicit task priority escalation (`LOW`, `MEDIUM`, `HIGH`, `URGENT`), immutable activity audit logging (`task_activity_logs`), REST endpoint `GET /api/v1/tasks/{id}/activity`, and frontend activity timeline visualization.
+
+**Completed**
+
+- Created Flyway V3 database migration (`V3__add_task_workflow_and_audit_schema.sql`) updating `CHECK` constraints on `tasks.status` and `tasks.priority` and creating `task_activity_logs` audit table.
+- Updated `TaskStatus` enum to include `IN_REVIEW` and `TaskPriority` enum to include `URGENT`.
+- Implemented state machine transition validator (`validateStatusTransition`) in `TaskService` enforcing `TODO` → `IN_PROGRESS` → `IN_REVIEW` → `DONE` lifecycle. Invalid status jumps (e.g. `TODO` → `DONE`) return `HTTP 400 Bad Request`.
+- Supported `URGENT` task priority without automatic assignment side effects (`assignedUserId` remains unchanged).
+- Implemented field-specific transactional audit logging (`TASK_CREATED`, `STATUS_CHANGED`, `PRIORITY_CHANGED`, `ASSIGNEE_CHANGED`, `SPRINT_CHANGED`, `TASK_DELETED`) bound to task mutations.
+- Enforced mandatory server-side actor identity extraction from JWT SecurityContext (`SecurityUtils.getCurrentUserId()`).
+- Configured audit log retention after task row deletion using `task_id ON DELETE SET NULL` and `project_id ON DELETE CASCADE`, preserving historical `TASK_DELETED` records.
+- Implemented `TaskActivityLogRepository` using Spring `JdbcTemplate` for query execution.
+- Added `GET /api/v1/tasks/{id}/activity` REST endpoint in `TaskController` protected by project membership authorization (`checkProjectMemberOrAdmin`).
+- Created `TaskActivityTimeline` UI component and integrated activity history display into React SPA `TaskDetailPage`.
+- Added automated backend unit & integration tests (`TaskServiceTest`) reaching 144/144 passing Java tests.
+- Added frontend unit tests (`taskApi.test.ts`) reaching 10/10 passing Vitest tests.
+- Verified production Vite build and TypeScript compilation with zero errors.
+- Executed live containerized E2E verification script (`test_s4_1_e2e.py`) against multi-container Docker Compose environment (`db`, `backend`, `frontend` all `healthy`).
+
+**Challenges & Solutions**
+
+- *Audit Log Deletion Semantics*: Configured `task_id REFERENCES tasks(id) ON DELETE SET NULL` and `project_id REFERENCES projects(id) ON DELETE CASCADE` in Flyway `V3` to ensure audit records (including `TASK_DELETED`) survive individual task row deletions while remaining queryable at the project level.
+- *Actor Identity Security*: Enforced server-side resolution of `actor_user_id` strictly from Spring Security context to prevent client payload actor spoofing.
+
+---
+
 ## Current Status
 
 - Phase S1 — Backend Foundation: **COMPLETE**
@@ -407,3 +439,4 @@ Orchestrate PostgreSQL 16+, Spring Boot 4.1.0 / Java 21 backend, and React 18 / 
 - S2-2 — Team & Project Management UI: **COMPLETE** (`9112df0`)
 - S2-3 — Sprint Planning & Task Kanban UI: **COMPLETE** (`6c00705`)
 - S3-1 — DevOps & Multi-Container Dockerization: **COMPLETE** (`8606c79`)
+- S4-1 — Advanced Task Workflow & Audit Logging: **COMPLETE** (`442f90d`)

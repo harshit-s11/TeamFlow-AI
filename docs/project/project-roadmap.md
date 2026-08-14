@@ -107,11 +107,30 @@ Completed modules:
 
 ---
 
+## Phase S4 — Advanced Workflows & Audit Logging
+
+**Status:** ✅ Completed
+
+Completed modules:
+
+- [x] **S4-1 — Advanced Task Workflow & Audit Logging** (Commit `442f90d`)
+  - Flyway V3 migration (`V3__add_task_workflow_and_audit_schema.sql`) updating task status/priority `CHECK` constraints and creating `task_activity_logs` audit table
+  - Enforced task status transition state machine rules (`TODO` → `IN_PROGRESS` → `IN_REVIEW` → `DONE`), rejecting invalid jumps with `HTTP 400 Bad Request`
+  - Added `URGENT` task priority without automatic assignment side effects
+  - Implemented transactional field-specific audit logging (`TASK_CREATED`, `STATUS_CHANGED`, `PRIORITY_CHANGED`, `ASSIGNEE_CHANGED`, `SPRINT_CHANGED`, `TASK_DELETED`)
+  - Mandatory server-side actor identity extraction from JWT SecurityContext (`SecurityUtils.getCurrentUserId()`)
+  - Audit history retention after task row deletion using `task_id ON DELETE SET NULL`
+  - Added `GET /api/v1/tasks/{id}/activity` REST endpoint with project membership authorization
+  - Created `TaskActivityTimeline` UI component and integrated activity history in React SPA TaskDetailPage
+  - Expanded test coverage reaching 144 passing backend Java tests and 10 passing Vitest frontend tests
+  - Verification of live containerized E2E workflows and production Vite build
+
+---
+
 ## Future Phase Planning
 
 ### Potential Future Directions (PROPOSED / UNCOMMITTED)
 
 The following areas represent candidate directions for future project phases:
 
-- **Advanced Task Management**: Task status state machine transitions, priority escalation, activity audit logging.
 - **AI Integration Phase**: LLM-powered sprint velocity forecasting, task breakdown generation, and automated standup summaries.

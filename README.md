@@ -83,6 +83,7 @@ PostgreSQL (Database)
 | `/api/v1/projects/{id}/sprints` | `GET` | Project Member or `ADMIN` | List project-scoped sprints |
 | `/api/v1/tasks` | `GET`, `POST` | `ADMIN` (GET) / Project Member (POST) | List all tasks or create task |
 | `/api/v1/tasks/{id}` | `GET`, `PUT`, `DELETE` | Project Member or `ADMIN` | Task CRUD operations |
+| `/api/v1/tasks/{id}/activity` | `GET` | Project Member or `ADMIN` | List task activity audit logs |
 | `/api/v1/projects/{id}/tasks` | `GET` | Project Member or `ADMIN` | List project-scoped tasks |
 | `/api/v1/sprints/{id}/tasks` | `GET` | Project Member or `ADMIN` | List sprint-scoped tasks |
 
@@ -96,7 +97,8 @@ PostgreSQL (Database)
 - **Resource Membership Authorization**: Access to teams, projects, sprints, and tasks is restricted to enrolled members of `team_members` or `project_members`.
 - **Creator Auto-Membership**: Creating a team or project automatically enrolls the creator into the membership table inside a single transaction.
 - **IDOR Protection**: Requests attempting to access resources belonging to another team/project without membership return `HTTP 403 Forbidden`.
-- **Structured Error Responses**: `401 Unauthorized` for missing/invalid tokens; `403 Forbidden` for unauthorized resource access (`ApiErrorResponse`).
+- **Server-Side Actor Extraction**: Audit events extract actor user identity exclusively from the authenticated JWT Security Context (`SecurityUtils.getCurrentUserId()`).
+- **Structured Error Responses**: `401 Unauthorized` for missing/invalid tokens; `403 Forbidden` for unauthorized resource access; `400 Bad Request` for invalid state machine transitions (`ApiErrorResponse`).
 
 ---
 
@@ -104,20 +106,22 @@ PostgreSQL (Database)
 
 - `V1__create_core_schema.sql`: Core schema for `users`, `teams`, `team_members`, `projects`, `project_members`, `sprints`, `tasks`.
 - `V2__add_authentication_fields.sql`: Additive migration adding `password_hash VARCHAR(255)` and `role VARCHAR(50) DEFAULT 'USER'`.
+- `V3__add_task_workflow_and_audit_schema.sql`: Migration updating `CHECK` constraints for `IN_REVIEW` status and `URGENT` priority, creating `task_activity_logs` audit table with task deletion retention (`task_id ON DELETE SET NULL`).
 
 ---
 
 ## Testing & Verification
 
-- **Backend Test Suite**: 140 automated tests executed (100% pass rate).
-- **Frontend Test Suite**: 9 Vitest unit/integration tests executed (100% pass rate).
+- **Backend Test Suite**: 144 automated tests executed (100% pass rate).
+- **Frontend Test Suite**: 10 Vitest unit/integration tests executed (100% pass rate).
 - **Production Build**: Clean TypeScript compilation (`tsc && vite build`) with zero errors.
+- **Container E2E Verification**: End-to-end REST API verification executed successfully against live containerized environment (`db`, `backend`, `frontend`).
 
 ---
 
 ## Current Status
 
-**Current Phase:** Phase S3 — DevOps & Deployment Foundation
+**Current Phase:** Phase S4 — Advanced Workflows & Audit Logging
 
 Completed Milestones:
 
@@ -127,14 +131,14 @@ Completed Milestones:
 - ✅ **S2-2** — Team & Project Management UI (`9112df0`)
 - ✅ **S2-3** — Sprint Planning & Task Kanban UI (`6c00705`)
 - ✅ **S3-1** — DevOps & Multi-Container Dockerization (`8606c79`)
+- ✅ **S4-1** — Advanced Task Workflow & Audit Logging (`442f90d`)
 
-*(Note: Post-S3-1 milestones remain un-specified in repository documentation).*
+*(Note: Post-S4-1 milestones remain un-specified in repository documentation).*
 
 ---
 
 ## Potential Future Work (Proposed / Uncommitted)
 
-- Advanced task status state machine transitions & audit logging.
 - AI assistant integration.
 
 ---
