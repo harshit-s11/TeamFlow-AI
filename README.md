@@ -43,6 +43,41 @@ The project serves as a portfolio application for Software Development Engineer 
 
 ---
 
+## Quick Start
+
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/harshit-s11/TeamFlow-AI.git
+   cd TeamFlow-AI
+   ```
+
+2. **Configure Environment File**:
+   - On Windows (PowerShell / CMD):
+     ```cmd
+     copy .env.example .env
+     ```
+   - On Linux / macOS:
+     ```bash
+     cp .env.example .env
+     ```
+   > **Note**: Setting `GEMINI_API_KEY` in `.env` is optional for running the core application. Base Agile features operate fully without an API key; live Gemini AI features require a valid key.
+
+3. **Launch Docker Compose Stack**:
+   ```bash
+   docker compose up -d
+   ```
+
+4. **Verify Container Health**:
+   ```bash
+   docker compose ps
+   ```
+
+5. **Access Application**:
+   - **Frontend UI**: [http://localhost/](http://localhost/)
+   - **Backend Health Check**: [http://localhost:8080/api/v1/health](http://localhost:8080/api/v1/health)
+
+---
+
 ## Architecture Pattern
 
 TeamFlow AI strictly follows a clean full-stack architecture:
@@ -117,7 +152,7 @@ PostgreSQL (Database)
 ## Testing & Verification
 
 - **Backend Test Suite**: 144 automated tests executed (100% pass rate).
-- **Frontend Test Suite**: 13 Vitest unit/integration tests executed (100% pass rate).
+- **Frontend Test Suite**: 15 Vitest unit/integration tests passing across 7 test files (100% pass rate).
 - **Production Build**: Clean TypeScript compilation (`tsc && vite build`) with zero errors.
 - **Container E2E Verification**: End-to-end REST API verification executed successfully against live containerized environment (`db`, `backend`, `frontend`).
 
