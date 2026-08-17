@@ -31,7 +31,12 @@ apiClient.interceptors.response.use(
 
 export function parseApiError(error: unknown): string {
   if (axios.isAxiosError(error) && error.response?.data) {
-    const apiError = error.response.data as ApiErrorResponse;
+    const apiError = error.response.data as ApiErrorResponse & {
+      fieldErrors?: Array<{ field: string; message: string }>;
+    };
+    if (apiError.fieldErrors && apiError.fieldErrors.length > 0) {
+      return apiError.fieldErrors.map((fe) => fe.message).join(', ');
+    }
     if (apiError.message) {
       return apiError.message;
     }
