@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="TeamFlow%20AI%20Banner.png" alt="TeamFlow AI Banner" width="100%" />
+</p>
+
 # TeamFlow AI
 
 TeamFlow AI is a production-quality AI-powered Agile Project Management Platform being built to demonstrate modern backend engineering, system design, and software development practices.
